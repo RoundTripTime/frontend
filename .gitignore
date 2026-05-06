@@ -1,0 +1,70 @@
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# EAS
+.eas/
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# Test coverage
+coverage/
+
+# Sentry
+.sentryclirc
+
+# OS
+.DS_Store
+*.pem
+Thumbs.db
+Desktop.ini
+
+# IDE / editor
+.idea/
+*.swp
+*~
+.history/
+
+# Husky auto-regen (kept on local install via `prepare`)
+.husky/_/
+
+# env files
+.env
+.env.*
+.env.example
+
+# typescript
+*.tsbuildinfo
+
+app-example
+
+# generated native folders
+/ios
+/android
+
+# Internal planning (project-private, do not publish)
+docs/
+CLAUDE.md
+forme.md

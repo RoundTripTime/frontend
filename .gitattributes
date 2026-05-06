@@ -1,0 +1,36 @@
+# Normalize line endings: store LF in repo, convert per-OS on checkout
+* text=auto eol=lf
+
+# Force LF for shell / config files even on Windows checkouts
+*.sh         text eol=lf
+*.yml        text eol=lf
+*.yaml       text eol=lf
+*.json       text eol=lf
+*.md         text eol=lf
+
+# Force CRLF for Windows-only batch scripts
+*.bat        text eol=crlf
+*.cmd        text eol=crlf
+
+# Lock files: text but never auto-merge (to avoid corrupt resolutions)
+package-lock.json  text -merge
+
+# Binary assets — never line-ending convert, never diff
+*.png        binary
+*.jpg        binary
+*.jpeg       binary
+*.gif        binary
+*.ico        binary
+*.webp       binary
+*.svg        text
+*.pdf        binary
+*.ttf        binary
+*.otf        binary
+*.woff       binary
+*.woff2      binary
+*.mp4        binary
+*.mov        binary
+*.zip        binary
+*.tar        binary
+*.gz         binary
+*.keystore   binary
