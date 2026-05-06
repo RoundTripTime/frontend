@@ -47,6 +47,11 @@ const config: ExpoConfig = {
     typedRoutes: true,
     reactCompiler: true,
   },
+  extra: {
+    appEnv: process.env.APP_ENV ?? 'development',
+    // EAS 가 `eas init` 시 `eas.projectId` 를 자동 주입함.
+    // 그 외 런타임 키는 `EXPO_PUBLIC_*` 로 직접 접근 (process.env.EXPO_PUBLIC_*).
+  },
 };
 
 export default config;
