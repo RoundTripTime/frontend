@@ -34,15 +34,9 @@ cp .env.example .env   # fill in keys as needed
 | `npm run format:check` | Prettier check (CI)                       |
 | `npm run typecheck`    | TypeScript --noEmit                       |
 
-## Branch Strategy
+## Git
 
-- `main` is protected. Direct pushes are not allowed.
-- All changes go through Pull Requests targeting `main`.
-- Required for merge:
-  - ✅ Lint / Typecheck / Format pass
-  - ✅ At least 1 review approval
-  - ✅ Branch up to date with `main`
-- GitHub branch protection rules to be configured after the first push.
+See [Git conventions](git.md).
 
 ## Pre-commit Hooks
 
