@@ -16,7 +16,7 @@ const config: ExpoConfig = {
   android: {
     package: 'com.seungmin.roundtrip',
     adaptiveIcon: {
-      backgroundColor: '#E6F4FE',
+      backgroundColor: '#3182F6',
       foregroundImage: './assets/images/android-icon-foreground.png',
       backgroundImage: './assets/images/android-icon-background.png',
       monochromeImage: './assets/images/android-icon-monochrome.png',
@@ -38,7 +38,7 @@ const config: ExpoConfig = {
         resizeMode: 'contain',
         backgroundColor: '#ffffff',
         dark: {
-          backgroundColor: '#000000',
+          backgroundColor: '#ffffff',
         },
       },
     ],
