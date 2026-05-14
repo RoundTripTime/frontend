@@ -76,7 +76,12 @@ export async function handleUnauthorizedRefresh(
 ): Promise<AxiosResponse> {
   const originalRequest = error.config as RetriableRequestConfig | undefined;
 
-  if (error.response?.status !== 401 || !originalRequest || originalRequest._retry) {
+  if (
+    error.response?.status !== 401 ||
+    !originalRequest ||
+    originalRequest._retry ||
+    originalRequest.url?.includes('/auth/refresh')
+  ) {
     throw mapApiError(error);
   }
 

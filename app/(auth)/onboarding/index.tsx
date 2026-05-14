@@ -1,7 +1,20 @@
-import { Link, type Href } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { useAuthStore } from '@/src/stores/auth';
+
 export default function OnboardingScreen() {
+  const router = useRouter();
+  const login = useAuthStore((state) => state.login);
+  const status = useAuthStore((state) => state.status);
+  const errorMessage = useAuthStore((state) => state.errorMessage);
+  const isLoading = status === 'checking';
+
+  const handleLogin = async (provider: 'google' | 'kakao') => {
+    await login(provider);
+    router.replace('/');
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       {/*
@@ -16,16 +29,25 @@ export default function OnboardingScreen() {
           <Text style={styles.slideTitle}>{copy}</Text>
         </View>
       ))}
-      <Link href={'/' as Href} asChild>
-        <TouchableOpacity style={styles.primaryButton}>
-          <Text style={styles.primaryButtonText}>Google로 시작하기</Text>
-        </TouchableOpacity>
-      </Link>
-      <Link href={'/' as Href} asChild>
-        <TouchableOpacity style={styles.secondaryButton}>
-          <Text style={styles.secondaryButtonText}>Kakao로 시작하기</Text>
-        </TouchableOpacity>
-      </Link>
+      {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
+      <TouchableOpacity
+        disabled={isLoading}
+        style={[styles.primaryButton, isLoading && styles.disabledButton]}
+        onPress={() => {
+          void handleLogin('google');
+        }}
+      >
+        <Text style={styles.primaryButtonText}>Google로 시작하기</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        disabled={isLoading}
+        style={[styles.secondaryButton, isLoading && styles.disabledButton]}
+        onPress={() => {
+          void handleLogin('kakao');
+        }}
+      >
+        <Text style={styles.secondaryButtonText}>Kakao로 시작하기</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -40,4 +62,6 @@ const styles = StyleSheet.create({
   primaryButtonText: { color: '#FFFFFF', fontWeight: '800', textAlign: 'center' },
   secondaryButton: { backgroundColor: '#FEE500', borderRadius: 8, padding: 16 },
   secondaryButtonText: { color: '#111827', fontWeight: '800', textAlign: 'center' },
+  disabledButton: { opacity: 0.5 },
+  error: { color: '#DC2626', fontWeight: '700' },
 });

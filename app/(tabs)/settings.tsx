@@ -1,6 +1,12 @@
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { useAuthStore } from '@/src/stores/auth';
+
 export default function SettingsScreen() {
+  const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
+  const deleteAccount = useAuthStore((state) => state.deleteAccount);
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       {/*
@@ -12,22 +18,33 @@ export default function SettingsScreen() {
       <View style={styles.profile}>
         <View style={styles.avatar} />
         <View style={styles.profileText}>
-          <Text style={styles.nickname}>이상한 여우 8237</Text>
-          <Text style={styles.email}>user@example.com</Text>
+          <Text style={styles.nickname}>{user?.nickname ?? '이상한 여우 8237'}</Text>
+          <Text style={styles.email}>{user?.email ?? 'user@example.com'}</Text>
         </View>
       </View>
-      {[
-        '프로필 사진 변경',
-        '닉네임 변경',
-        '알림 설정',
-        '지도 공급자: Kakao / Google',
-        '로그아웃',
-        '계정 삭제',
-      ].map((item) => (
-        <TouchableOpacity key={item} style={styles.row}>
-          <Text style={styles.rowText}>{item}</Text>
-        </TouchableOpacity>
-      ))}
+      {['프로필 사진 변경', '닉네임 변경', '알림 설정', '지도 공급자: Kakao / Google'].map(
+        (item) => (
+          <TouchableOpacity key={item} style={styles.row}>
+            <Text style={styles.rowText}>{item}</Text>
+          </TouchableOpacity>
+        ),
+      )}
+      <TouchableOpacity
+        style={styles.row}
+        onPress={() => {
+          void logout();
+        }}
+      >
+        <Text style={styles.rowText}>로그아웃</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.row}
+        onPress={() => {
+          void deleteAccount();
+        }}
+      >
+        <Text style={styles.dangerText}>계정 삭제</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -49,4 +66,5 @@ const styles = StyleSheet.create({
   email: { color: '#6B7280' },
   row: { backgroundColor: '#FFFFFF', borderRadius: 8, padding: 16 },
   rowText: { color: '#111827', fontWeight: '700' },
+  dangerText: { color: '#DC2626', fontWeight: '800' },
 });

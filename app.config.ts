@@ -1,5 +1,10 @@
 import type { ExpoConfig } from 'expo/config';
 
+const googleIosUrlScheme =
+  process.env.EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME ?? 'com.googleusercontent.apps.REPLACE_ME';
+const kakaoNativeAppKey =
+  process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY ?? 'KAKAO_NATIVE_APP_KEY_REQUIRED';
+
 const config: ExpoConfig = {
   name: 'Round Trip',
   slug: 'round-trip',
@@ -30,6 +35,19 @@ const config: ExpoConfig = {
   },
   plugins: [
     'expo-router',
+    'expo-secure-store',
+    [
+      '@react-native-google-signin/google-signin',
+      {
+        iosUrlScheme: googleIosUrlScheme,
+      },
+    ],
+    [
+      '@react-native-seoul/kakao-login',
+      {
+        kakaoAppKey: kakaoNativeAppKey,
+      },
+    ],
     [
       'expo-splash-screen',
       {
@@ -49,6 +67,8 @@ const config: ExpoConfig = {
   },
   extra: {
     appEnv: process.env.APP_ENV ?? 'development',
+    googleIosUrlScheme,
+    kakaoNativeAppKey,
     // EAS 가 `eas init` 시 `eas.projectId` 를 자동 주입함.
     // 그 외 런타임 키는 `EXPO_PUBLIC_*` 로 직접 접근 (process.env.EXPO_PUBLIC_*).
   },
