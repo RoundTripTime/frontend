@@ -1,9 +1,15 @@
 import { Link, type Href } from 'expo-router';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { useAppTheme, type AppTheme } from '@/src/theme';
+
 export default function CommunityScreen() {
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <DevScreenHeader screenName="커뮤니티" screenNumber="S-11" />
       {/*
         화면: 커뮤니티 (S-11)
         기능: 피드 탭과 플랜 마켓 탭을 제공하고 포스트 카드에서 상세 화면으로 이동한다.
@@ -43,32 +49,42 @@ export default function CommunityScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { gap: 16, padding: 20, paddingTop: 64 },
-  title: { color: '#111827', fontSize: 30, fontWeight: '800' },
-  chips: { flexDirection: 'row', gap: 8 },
-  chip: {
-    backgroundColor: '#F3F4F6',
-    borderRadius: 18,
-    color: '#374151',
-    overflow: 'hidden',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  activeChip: { backgroundColor: '#FFEDD5', color: '#C2410C', fontWeight: '700' },
-  card: { backgroundColor: '#FFFFFF', borderRadius: 8, gap: 8, padding: 16 },
-  avatar: { backgroundColor: '#E5E7EB', borderRadius: 18, height: 36, width: 36 },
-  author: { color: '#111827', fontWeight: '800' },
-  body: { color: '#374151', lineHeight: 20 },
-  tagCard: { backgroundColor: '#F9FAFB', borderRadius: 8, padding: 12 },
-  tagTitle: { color: '#111827', fontWeight: '700' },
-  meta: { color: '#6B7280' },
-  fab: {
-    alignSelf: 'flex-end',
-    backgroundColor: '#EA580C',
-    borderRadius: 22,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-  },
-  fabText: { color: '#FFFFFF', fontWeight: '800' },
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: { backgroundColor: theme.semantic.background, gap: 16, padding: 20, paddingTop: 64 },
+    title: { color: theme.semantic.text, fontSize: 30, fontWeight: '800' },
+    chips: { flexDirection: 'row', gap: 8 },
+    chip: {
+      backgroundColor: theme.semantic.surfaceMuted,
+      borderRadius: 18,
+      color: theme.semantic.textSecondary,
+      overflow: 'hidden',
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+    },
+    activeChip: {
+      backgroundColor: theme.semantic.primarySoft,
+      color: theme.semantic.primaryDeep,
+      fontWeight: '700',
+    },
+    card: { backgroundColor: theme.semantic.surface, borderRadius: 8, gap: 8, padding: 16 },
+    avatar: {
+      backgroundColor: theme.semantic.mediaPlaceholder,
+      borderRadius: 18,
+      height: 36,
+      width: 36,
+    },
+    author: { color: theme.semantic.text, fontWeight: '800' },
+    body: { color: theme.semantic.textSecondary, lineHeight: 20 },
+    tagCard: { backgroundColor: theme.semantic.input, borderRadius: 8, padding: 12 },
+    tagTitle: { color: theme.semantic.text, fontWeight: '700' },
+    meta: { color: theme.semantic.textMuted },
+    fab: {
+      alignSelf: 'flex-end',
+      backgroundColor: theme.semantic.primary,
+      borderRadius: 22,
+      paddingHorizontal: 18,
+      paddingVertical: 12,
+    },
+    fabText: { color: theme.semantic.onPrimary, fontWeight: '800' },
+  });

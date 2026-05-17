@@ -1,9 +1,15 @@
 import { Link, type Href } from 'expo-router';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { useAppTheme, type AppTheme } from '@/src/theme';
+
 export default function PlanEditScreen() {
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <DevScreenHeader screenName="플랜 상세 / 편집" screenNumber="S-07" />
       {/*
         화면: 플랜 상세 / 편집 (S-07)
         기능: 여행 정보, 일자별 장소 배치, 미배치 장소 풀, Agent, 지도, 공유, OTA 예약, 저장 액션을 제공한다.
@@ -47,22 +53,23 @@ export default function PlanEditScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { gap: 14, padding: 20, paddingTop: 32 },
-  title: { color: '#111827', fontSize: 28, fontWeight: '800' },
-  meta: { color: '#6B7280' },
-  actions: { flexDirection: 'row', gap: 8 },
-  action: {
-    backgroundColor: '#F3F4F6',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  actionText: { color: '#111827', fontWeight: '800' },
-  section: { backgroundColor: '#FFFFFF', borderRadius: 8, gap: 10, padding: 14 },
-  sectionTitle: { color: '#111827', fontSize: 17, fontWeight: '800' },
-  place: { color: '#374151' },
-  ota: { backgroundColor: '#FFF7ED', borderRadius: 8, gap: 8, padding: 14 },
-  primaryButton: { backgroundColor: '#EA580C', borderRadius: 8, padding: 16 },
-  primaryButtonText: { color: '#FFFFFF', fontWeight: '800', textAlign: 'center' },
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: { backgroundColor: theme.semantic.background, gap: 14, padding: 20, paddingTop: 32 },
+    title: { color: theme.semantic.text, fontSize: 28, fontWeight: '800' },
+    meta: { color: theme.semantic.textMuted },
+    actions: { flexDirection: 'row', gap: 8 },
+    action: {
+      backgroundColor: theme.semantic.surfaceMuted,
+      borderRadius: 8,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+    },
+    actionText: { color: theme.semantic.text, fontWeight: '800' },
+    section: { backgroundColor: theme.semantic.surface, borderRadius: 8, gap: 10, padding: 14 },
+    sectionTitle: { color: theme.semantic.text, fontSize: 17, fontWeight: '800' },
+    place: { color: theme.semantic.textSecondary },
+    ota: { backgroundColor: theme.semantic.primarySoft, borderRadius: 8, gap: 8, padding: 14 },
+    primaryButton: { backgroundColor: theme.semantic.primary, borderRadius: 8, padding: 16 },
+    primaryButtonText: { color: theme.semantic.onPrimary, fontWeight: '800', textAlign: 'center' },
+  });

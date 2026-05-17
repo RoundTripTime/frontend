@@ -1,9 +1,15 @@
 import { Link, type Href } from 'expo-router';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { useAppTheme, type AppTheme } from '@/src/theme';
+
 export default function CommunityPostDetailScreen() {
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
   return (
     <View style={styles.container}>
+      <DevScreenHeader screenName="커뮤니티 포스트 상세" screenNumber="S-11A" />
       {/*
         화면: 커뮤니티 포스트 상세 (S-11A)
         기능: 포스트 본문, 태그된 장소/플랜, 좋아요/공유, 댓글 목록과 댓글 입력을 제공한다.
@@ -27,22 +33,28 @@ export default function CommunityPostDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, gap: 14, padding: 20 },
-  title: { color: '#111827', fontSize: 22, fontWeight: '800' },
-  body: { color: '#374151', lineHeight: 22 },
-  tagCard: { backgroundColor: '#FFFFFF', borderRadius: 8, padding: 14 },
-  tagText: { color: '#111827', fontWeight: '800' },
-  meta: { color: '#6B7280' },
-  divider: { backgroundColor: '#E5E7EB', height: 1 },
-  sectionTitle: { color: '#111827', fontSize: 18, fontWeight: '800' },
-  comment: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    color: '#374151',
-    overflow: 'hidden',
-    padding: 12,
-  },
-  input: { backgroundColor: '#FFFFFF', borderRadius: 8, marginTop: 'auto', padding: 14 },
-  placeholder: { color: '#9CA3AF' },
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: { backgroundColor: theme.semantic.background, flex: 1, gap: 14, padding: 20 },
+    title: { color: theme.semantic.text, fontSize: 22, fontWeight: '800' },
+    body: { color: theme.semantic.textSecondary, lineHeight: 22 },
+    tagCard: { backgroundColor: theme.semantic.surface, borderRadius: 8, padding: 14 },
+    tagText: { color: theme.semantic.text, fontWeight: '800' },
+    meta: { color: theme.semantic.textMuted },
+    divider: { backgroundColor: theme.semantic.mediaPlaceholder, height: 1 },
+    sectionTitle: { color: theme.semantic.text, fontSize: 18, fontWeight: '800' },
+    comment: {
+      backgroundColor: theme.semantic.surface,
+      borderRadius: 8,
+      color: theme.semantic.textSecondary,
+      overflow: 'hidden',
+      padding: 12,
+    },
+    input: {
+      backgroundColor: theme.semantic.surface,
+      borderRadius: 8,
+      marginTop: 'auto',
+      padding: 14,
+    },
+    placeholder: { color: theme.semantic.placeholder },
+  });

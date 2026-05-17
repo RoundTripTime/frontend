@@ -7,6 +7,8 @@ import {
   type InternalAxiosRequestConfig,
 } from 'axios';
 
+import { installApiMockAdapter } from '@/src/mocks';
+
 import { mapApiError } from './errorMap';
 
 export const API_BASE_URL = 'https://api.example.com/v1';
@@ -41,6 +43,8 @@ export const apiClient = create({
     'Content-Type': 'application/json',
   },
 });
+
+installApiMockAdapter(apiClient);
 
 export async function applyAuthHeader(
   config: InternalAxiosRequestConfig,

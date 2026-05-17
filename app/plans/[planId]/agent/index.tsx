@@ -1,9 +1,15 @@
 import { Link, type Href } from 'expo-router';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { useAppTheme, type AppTheme } from '@/src/theme';
+
 export default function PlanningAgentScreen() {
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
   return (
     <View style={styles.container}>
+      <DevScreenHeader screenName="Planning Agent 대화" screenNumber="S-08" />
       {/*
         화면: Planning Agent 대화 (S-08)
         기능: 자연어 입력, 빠른 제안 칩, Agent 응답 카드, 플랜 반영 액션을 제공한다.
@@ -33,36 +39,37 @@ export default function PlanningAgentScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, gap: 14, padding: 20 },
-  title: { color: '#111827', fontSize: 26, fontWeight: '800' },
-  messages: { flex: 1, gap: 12 },
-  message: {
-    alignSelf: 'flex-end',
-    backgroundColor: '#EA580C',
-    borderRadius: 8,
-    color: '#FFFFFF',
-    overflow: 'hidden',
-    padding: 12,
-  },
-  agentCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    color: '#111827',
-    overflow: 'hidden',
-    padding: 14,
-  },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: {
-    backgroundColor: '#F3F4F6',
-    borderRadius: 18,
-    color: '#374151',
-    overflow: 'hidden',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  input: { backgroundColor: '#FFFFFF', borderRadius: 8, padding: 14 },
-  placeholder: { color: '#9CA3AF' },
-  primaryButton: { backgroundColor: '#EA580C', borderRadius: 8, padding: 15 },
-  primaryButtonText: { color: '#FFFFFF', fontWeight: '800', textAlign: 'center' },
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: { backgroundColor: theme.semantic.background, flex: 1, gap: 14, padding: 20 },
+    title: { color: theme.semantic.text, fontSize: 26, fontWeight: '800' },
+    messages: { flex: 1, gap: 12 },
+    message: {
+      alignSelf: 'flex-end',
+      backgroundColor: theme.semantic.primary,
+      borderRadius: 8,
+      color: theme.semantic.onPrimary,
+      overflow: 'hidden',
+      padding: 12,
+    },
+    agentCard: {
+      backgroundColor: theme.semantic.surface,
+      borderRadius: 8,
+      color: theme.semantic.text,
+      overflow: 'hidden',
+      padding: 14,
+    },
+    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    chip: {
+      backgroundColor: theme.semantic.surfaceMuted,
+      borderRadius: 18,
+      color: theme.semantic.textSecondary,
+      overflow: 'hidden',
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    input: { backgroundColor: theme.semantic.surface, borderRadius: 8, padding: 14 },
+    placeholder: { color: theme.semantic.placeholder },
+    primaryButton: { backgroundColor: theme.semantic.primary, borderRadius: 8, padding: 15 },
+    primaryButtonText: { color: theme.semantic.onPrimary, fontWeight: '800', textAlign: 'center' },
+  });

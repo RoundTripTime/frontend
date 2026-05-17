@@ -1,6 +1,9 @@
 import { Link, type Href } from 'expo-router';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { useAppTheme, type AppTheme } from '@/src/theme';
+
 const plans = [
   {
     id: 'tokyo-summer',
@@ -19,8 +22,11 @@ const plans = [
 ];
 
 export default function PlansScreen() {
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <DevScreenHeader screenName="플랜 목록" screenNumber="S-06" />
       {/*
         화면: 플랜 목록 (S-06)
         기능: 진행 중이거나 완성된 여행 플랜을 목록으로 관리하고 새 플랜 생성을 시작한다.
@@ -50,23 +56,24 @@ export default function PlansScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { gap: 16, padding: 20, paddingTop: 64 },
-  header: { gap: 12 },
-  title: { color: '#111827', fontSize: 30, fontWeight: '800' },
-  primaryButton: { backgroundColor: '#EA580C', borderRadius: 8, padding: 14 },
-  primaryButtonText: { color: '#FFFFFF', fontWeight: '800', textAlign: 'center' },
-  card: { backgroundColor: '#FFFFFF', borderRadius: 8, gap: 8, padding: 16 },
-  cardHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
-  cardTitle: { color: '#111827', fontSize: 18, fontWeight: '800' },
-  badge: {
-    backgroundColor: '#F3F4F6',
-    borderRadius: 14,
-    color: '#374151',
-    overflow: 'hidden',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  cardMeta: { color: '#6B7280' },
-  status: { color: '#EA580C', fontWeight: '700' },
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: { backgroundColor: theme.semantic.background, gap: 16, padding: 20, paddingTop: 64 },
+    header: { gap: 12 },
+    title: { color: theme.semantic.text, fontSize: 30, fontWeight: '800' },
+    primaryButton: { backgroundColor: theme.semantic.primary, borderRadius: 8, padding: 14 },
+    primaryButtonText: { color: theme.semantic.onPrimary, fontWeight: '800', textAlign: 'center' },
+    card: { backgroundColor: theme.semantic.surface, borderRadius: 8, gap: 8, padding: 16 },
+    cardHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+    cardTitle: { color: theme.semantic.text, fontSize: 18, fontWeight: '800' },
+    badge: {
+      backgroundColor: theme.semantic.surfaceMuted,
+      borderRadius: 14,
+      color: theme.semantic.textSecondary,
+      overflow: 'hidden',
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+    },
+    cardMeta: { color: theme.semantic.textMuted },
+    status: { color: theme.semantic.primary, fontWeight: '700' },
+  });

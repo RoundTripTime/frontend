@@ -1,9 +1,15 @@
 import { Link, type Href } from 'expo-router';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { useAppTheme, type AppTheme } from '@/src/theme';
+
 export default function MarketPlanDetailScreen() {
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <DevScreenHeader screenName="플랜 마켓 상세 / 미리보기 / 열람" screenNumber="S-11MP" />
       {/*
         화면: 플랜 마켓 상세 / 미리보기 / 열람 (S-11MP)
         기능: 무료 미리보기, 크레딧 열람, 잠금 영역, 전체 일정, 내 플랜 복사 액션을 제공한다.
@@ -34,25 +40,26 @@ export default function MarketPlanDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { gap: 14, padding: 20, paddingTop: 32 },
-  title: { color: '#111827', fontSize: 26, fontWeight: '800' },
-  meta: { color: '#6B7280' },
-  badge: { color: '#EA580C', fontWeight: '800' },
-  body: { color: '#374151', lineHeight: 22 },
-  preview: { backgroundColor: '#FFFFFF', borderRadius: 8, gap: 8, padding: 14 },
-  sectionTitle: { color: '#111827', fontWeight: '800' },
-  place: { color: '#374151' },
-  locked: {
-    alignItems: 'center',
-    backgroundColor: '#E5E7EB',
-    borderRadius: 8,
-    height: 120,
-    justifyContent: 'center',
-  },
-  lockedText: { color: '#374151', fontWeight: '800' },
-  primaryButton: { backgroundColor: '#EA580C', borderRadius: 8, padding: 15 },
-  primaryButtonText: { color: '#FFFFFF', fontWeight: '800', textAlign: 'center' },
-  secondaryButton: { backgroundColor: '#F3F4F6', borderRadius: 8, padding: 15 },
-  secondaryButtonText: { color: '#111827', fontWeight: '800', textAlign: 'center' },
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: { backgroundColor: theme.semantic.background, gap: 14, padding: 20, paddingTop: 32 },
+    title: { color: theme.semantic.text, fontSize: 26, fontWeight: '800' },
+    meta: { color: theme.semantic.textMuted },
+    badge: { color: theme.semantic.primary, fontWeight: '800' },
+    body: { color: theme.semantic.textSecondary, lineHeight: 22 },
+    preview: { backgroundColor: theme.semantic.surface, borderRadius: 8, gap: 8, padding: 14 },
+    sectionTitle: { color: theme.semantic.text, fontWeight: '800' },
+    place: { color: theme.semantic.textSecondary },
+    locked: {
+      alignItems: 'center',
+      backgroundColor: theme.semantic.mediaPlaceholder,
+      borderRadius: 8,
+      height: 120,
+      justifyContent: 'center',
+    },
+    lockedText: { color: theme.semantic.textSecondary, fontWeight: '800' },
+    primaryButton: { backgroundColor: theme.semantic.primary, borderRadius: 8, padding: 15 },
+    primaryButtonText: { color: theme.semantic.onPrimary, fontWeight: '800', textAlign: 'center' },
+    secondaryButton: { backgroundColor: theme.semantic.surfaceMuted, borderRadius: 8, padding: 15 },
+    secondaryButtonText: { color: theme.semantic.text, fontWeight: '800', textAlign: 'center' },
+  });

@@ -1,9 +1,15 @@
 import { Link, type Href } from 'expo-router';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { useAppTheme, type AppTheme } from '@/src/theme';
+
 export default function CreditsAdScreen() {
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
   return (
     <View style={styles.container}>
+      <DevScreenHeader screenName="광고 시청 / 크레딧 충전" screenNumber="S-11MAD" />
       {/*
         화면: 광고 시청 / 크레딧 충전 (S-11MAD)
         기능: 크레딧 잔액, 광고 시청 진행 상태, 진행 바, 광고 보기와 닫기 액션을 제공한다.
@@ -28,16 +34,28 @@ export default function CreditsAdScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, gap: 16, justifyContent: 'center', padding: 20 },
-  title: { color: '#111827', fontSize: 26, fontWeight: '800', textAlign: 'center' },
-  credit: { color: '#111827', fontSize: 18, fontWeight: '800', textAlign: 'center' },
-  progress: { color: '#6B7280', textAlign: 'center' },
-  progressBar: { backgroundColor: '#E5E7EB', borderRadius: 8, height: 12, overflow: 'hidden' },
-  progressFill: { backgroundColor: '#EA580C', height: 12, width: '60%' },
-  primaryButton: { backgroundColor: '#EA580C', borderRadius: 8, padding: 15 },
-  primaryButtonText: { color: '#FFFFFF', fontWeight: '800', textAlign: 'center' },
-  help: { color: '#6B7280', textAlign: 'center' },
-  secondaryButton: { backgroundColor: '#F3F4F6', borderRadius: 8, padding: 15 },
-  secondaryButtonText: { color: '#111827', fontWeight: '800', textAlign: 'center' },
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: {
+      backgroundColor: theme.semantic.background,
+      flex: 1,
+      gap: 16,
+      justifyContent: 'center',
+      padding: 20,
+    },
+    title: { color: theme.semantic.text, fontSize: 26, fontWeight: '800', textAlign: 'center' },
+    credit: { color: theme.semantic.text, fontSize: 18, fontWeight: '800', textAlign: 'center' },
+    progress: { color: theme.semantic.textMuted, textAlign: 'center' },
+    progressBar: {
+      backgroundColor: theme.semantic.mediaPlaceholder,
+      borderRadius: 8,
+      height: 12,
+      overflow: 'hidden',
+    },
+    progressFill: { backgroundColor: theme.semantic.primary, height: 12, width: '60%' },
+    primaryButton: { backgroundColor: theme.semantic.primary, borderRadius: 8, padding: 15 },
+    primaryButtonText: { color: theme.semantic.onPrimary, fontWeight: '800', textAlign: 'center' },
+    help: { color: theme.semantic.textMuted, textAlign: 'center' },
+    secondaryButton: { backgroundColor: theme.semantic.surfaceMuted, borderRadius: 8, padding: 15 },
+    secondaryButtonText: { color: theme.semantic.text, fontWeight: '800', textAlign: 'center' },
+  });

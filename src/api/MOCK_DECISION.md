@@ -1,14 +1,16 @@
 # Mock / MSW Decision
 
-WF-07 기준으로 현재는 MSW를 도입하지 않는다.
+WF-07 이후 개발 환경에서는 Axios mock adapter를 도입한다.
 
-이유:
+목표:
 
-- API spec은 REST 계약을 정의하지만 백엔드 준비 여부와 실제 응답 fixture 범위가 아직 산출물에 포함되어 있지 않다.
-- 프로젝트에 MSW 의존성이 없으므로 이번 workflow에서 `mocks/handlers.ts`를 추가하면 별도 패키지 설치와 런타임 연결 범위가 커진다.
-- 현재 산출물은 `src/api` 레이어의 타입, Axios 호출 함수, React Query 훅 표준화가 목적이다.
+- 화면과 store는 `src/api` 함수와 Axios 인스턴스를 그대로 호출한다.
+- 개발 환경에서는 Axios adapter가 요청/응답을 가로채 `docs/TDD/API spec.md` 기준 fixture를 반환한다.
+- `EXPO_PUBLIC_USE_API_MOCKS=false`이면 mock adapter를 비활성화하고 실제 API 서버로 요청을 보낸다.
 
-후속 도입 기준:
+구성:
 
-- 화면별 fixture가 정해지거나 백엔드 미준비 화면을 로컬에서 독립 검증해야 할 때 MSW를 추가한다.
-- 도입 시 `mocks/handlers.ts`는 이 API 함수 모듈의 경로와 응답 타입을 기준으로 작성한다.
+- `src/mocks/fixtures.ts`: 공통 fixture 데이터
+- `src/mocks/handlers.ts`: API spec 기반 mock route resolver
+- `src/mocks/index.ts`: Axios mock adapter 설치 함수
+- `mocks/handlers.ts`: WF-07 산출물 경로용 핸들러 재수출

@@ -1,14 +1,19 @@
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { DevScreenHeader } from '@/src/components/DevScreenHeader';
 import { useAuthStore } from '@/src/stores/auth';
+import { useAppTheme, type AppTheme } from '@/src/theme';
 
 export default function SettingsScreen() {
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const deleteAccount = useAuthStore((state) => state.deleteAccount);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <DevScreenHeader screenName="설정" screenNumber="S-12" />
       {/*
         화면: 설정 (S-12)
         기능: 프로필, 계정 정보, 알림, 지도 공급자, 로그아웃과 계정 삭제 설정을 관리한다.
@@ -49,22 +54,23 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { gap: 12, padding: 20, paddingTop: 64 },
-  title: { color: '#111827', fontSize: 30, fontWeight: '800' },
-  profile: {
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    flexDirection: 'row',
-    gap: 14,
-    padding: 16,
-  },
-  avatar: { backgroundColor: '#FED7AA', borderRadius: 28, height: 56, width: 56 },
-  profileText: { gap: 4 },
-  nickname: { color: '#111827', fontSize: 18, fontWeight: '800' },
-  email: { color: '#6B7280' },
-  row: { backgroundColor: '#FFFFFF', borderRadius: 8, padding: 16 },
-  rowText: { color: '#111827', fontWeight: '700' },
-  dangerText: { color: '#DC2626', fontWeight: '800' },
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: { backgroundColor: theme.semantic.background, gap: 12, padding: 20, paddingTop: 64 },
+    title: { color: theme.semantic.text, fontSize: 30, fontWeight: '800' },
+    profile: {
+      alignItems: 'center',
+      backgroundColor: theme.semantic.surface,
+      borderRadius: 8,
+      flexDirection: 'row',
+      gap: 14,
+      padding: 16,
+    },
+    avatar: { backgroundColor: theme.semantic.accentSoft, borderRadius: 28, height: 56, width: 56 },
+    profileText: { gap: 4 },
+    nickname: { color: theme.semantic.text, fontSize: 18, fontWeight: '800' },
+    email: { color: theme.semantic.textMuted },
+    row: { backgroundColor: theme.semantic.surface, borderRadius: 8, padding: 16 },
+    rowText: { color: theme.semantic.text, fontWeight: '700' },
+    dangerText: { color: theme.semantic.danger, fontWeight: '800' },
+  });

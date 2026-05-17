@@ -1,9 +1,13 @@
 import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { DevScreenHeader } from '@/src/components/DevScreenHeader';
 import { useAuthStore } from '@/src/stores/auth';
+import { useAppTheme, type AppTheme } from '@/src/theme';
 
 export default function OnboardingScreen() {
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
   const router = useRouter();
   const login = useAuthStore((state) => state.login);
   const status = useAuthStore((state) => state.status);
@@ -17,6 +21,7 @@ export default function OnboardingScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <DevScreenHeader screenName="온보딩" screenNumber="S-01" />
       {/*
         화면: 온보딩 (S-01)
         기능: 여행 영감 저장, 장소 자동 추출, 일정 생성 및 예약 가치를 소개하고 소셜 로그인을 유도한다.
@@ -52,16 +57,22 @@ export default function OnboardingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { gap: 16, padding: 20, paddingTop: 64 },
-  title: { color: '#111827', fontSize: 30, fontWeight: '800' },
-  slide: { backgroundColor: '#FFFFFF', borderRadius: 8, gap: 10, padding: 18 },
-  slideIndex: { color: '#EA580C', fontSize: 18, fontWeight: '800' },
-  slideTitle: { color: '#111827', fontSize: 20, fontWeight: '800' },
-  primaryButton: { backgroundColor: '#111827', borderRadius: 8, marginTop: 12, padding: 16 },
-  primaryButtonText: { color: '#FFFFFF', fontWeight: '800', textAlign: 'center' },
-  secondaryButton: { backgroundColor: '#FEE500', borderRadius: 8, padding: 16 },
-  secondaryButtonText: { color: '#111827', fontWeight: '800', textAlign: 'center' },
-  disabledButton: { opacity: 0.5 },
-  error: { color: '#DC2626', fontWeight: '700' },
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: { backgroundColor: theme.semantic.background, gap: 16, padding: 20, paddingTop: 64 },
+    title: { color: theme.semantic.text, fontSize: 30, fontWeight: '800' },
+    slide: { backgroundColor: theme.semantic.surface, borderRadius: 8, gap: 10, padding: 18 },
+    slideIndex: { color: theme.semantic.primary, fontSize: 18, fontWeight: '800' },
+    slideTitle: { color: theme.semantic.text, fontSize: 20, fontWeight: '800' },
+    primaryButton: {
+      backgroundColor: theme.semantic.primaryDeep,
+      borderRadius: 8,
+      marginTop: 12,
+      padding: 16,
+    },
+    primaryButtonText: { color: theme.semantic.onPrimary, fontWeight: '800', textAlign: 'center' },
+    secondaryButton: { backgroundColor: theme.semantic.kakao, borderRadius: 8, padding: 16 },
+    secondaryButtonText: { color: theme.semantic.text, fontWeight: '800', textAlign: 'center' },
+    disabledButton: { opacity: 0.5 },
+    error: { color: theme.semantic.danger, fontWeight: '700' },
+  });

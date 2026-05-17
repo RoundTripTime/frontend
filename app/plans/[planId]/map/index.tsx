@@ -1,9 +1,15 @@
 import { Link, type Href } from 'expo-router';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { useAppTheme, type AppTheme } from '@/src/theme';
+
 export default function PlanMapScreen() {
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
   return (
     <View style={styles.container}>
+      <DevScreenHeader screenName="플랜 지도 스플릿 뷰" screenNumber="S-07-M" />
       {/*
         화면: 플랜 지도 스플릿 뷰 (S-07-M)
         기능: 플랜 장소 마커를 전체화면 지도에 표시하고 하단 시트에서 Day별 일정을 함께 확인한다.
@@ -26,36 +32,42 @@ export default function PlanMapScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  map: { alignItems: 'center', backgroundColor: '#D1D5DB', flex: 1, justifyContent: 'center' },
-  mapText: { color: '#374151', fontSize: 24, fontWeight: '800' },
-  close: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    left: 20,
-    padding: 10,
-    position: 'absolute',
-    top: 56,
-  },
-  closeText: { color: '#111827', fontWeight: '900' },
-  sheet: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-    bottom: 0,
-    gap: 10,
-    left: 0,
-    padding: 18,
-    position: 'absolute',
-    right: 0,
-  },
-  sheetTitle: { color: '#111827', fontSize: 18, fontWeight: '800' },
-  chip: {
-    backgroundColor: '#FFF7ED',
-    borderRadius: 18,
-    color: '#9A3412',
-    overflow: 'hidden',
-    padding: 10,
-  },
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: { backgroundColor: theme.semantic.background, flex: 1 },
+    map: {
+      alignItems: 'center',
+      backgroundColor: theme.semantic.borderStrong,
+      flex: 1,
+      justifyContent: 'center',
+    },
+    mapText: { color: theme.semantic.textSecondary, fontSize: 24, fontWeight: '800' },
+    close: {
+      backgroundColor: theme.semantic.surface,
+      borderRadius: 20,
+      left: 20,
+      padding: 10,
+      position: 'absolute',
+      top: 56,
+    },
+    closeText: { color: theme.semantic.text, fontWeight: '900' },
+    sheet: {
+      backgroundColor: theme.semantic.surface,
+      borderTopLeftRadius: 8,
+      borderTopRightRadius: 8,
+      bottom: 0,
+      gap: 10,
+      left: 0,
+      padding: 18,
+      position: 'absolute',
+      right: 0,
+    },
+    sheetTitle: { color: theme.semantic.text, fontSize: 18, fontWeight: '800' },
+    chip: {
+      backgroundColor: theme.semantic.primarySoft,
+      borderRadius: 18,
+      color: theme.semantic.primaryDeep,
+      overflow: 'hidden',
+      padding: 10,
+    },
+  });

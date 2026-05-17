@@ -1,8 +1,14 @@
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { useAppTheme, type AppTheme } from '@/src/theme';
+
 export default function MarketRegisterScreen() {
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <DevScreenHeader screenName="플랜 마켓 등록" screenNumber="S-11MR" />
       {/*
         화면: 플랜 마켓 등록 (S-11MR)
         기능: OTA 예약 완료 플랜을 선택하고 제목, 소개, 장단점, 팁 입력 후 마켓에 등록한다.
@@ -26,15 +32,16 @@ export default function MarketRegisterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { gap: 14, padding: 20, paddingTop: 32 },
-  title: { color: '#111827', fontSize: 28, fontWeight: '800' },
-  card: { backgroundColor: '#FFFFFF', borderRadius: 8, gap: 8, padding: 14 },
-  cardTitle: { color: '#111827', fontWeight: '800' },
-  badge: { color: '#EA580C', fontWeight: '800' },
-  field: { backgroundColor: '#FFFFFF', borderRadius: 8, gap: 8, padding: 14 },
-  label: { color: '#111827', fontWeight: '800' },
-  placeholder: { color: '#9CA3AF' },
-  primaryButton: { backgroundColor: '#EA580C', borderRadius: 8, padding: 15 },
-  primaryButtonText: { color: '#FFFFFF', fontWeight: '800', textAlign: 'center' },
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: { backgroundColor: theme.semantic.background, gap: 14, padding: 20, paddingTop: 32 },
+    title: { color: theme.semantic.text, fontSize: 28, fontWeight: '800' },
+    card: { backgroundColor: theme.semantic.surface, borderRadius: 8, gap: 8, padding: 14 },
+    cardTitle: { color: theme.semantic.text, fontWeight: '800' },
+    badge: { color: theme.semantic.primary, fontWeight: '800' },
+    field: { backgroundColor: theme.semantic.surface, borderRadius: 8, gap: 8, padding: 14 },
+    label: { color: theme.semantic.text, fontWeight: '800' },
+    placeholder: { color: theme.semantic.placeholder },
+    primaryButton: { backgroundColor: theme.semantic.primary, borderRadius: 8, padding: 15 },
+    primaryButtonText: { color: theme.semantic.onPrimary, fontWeight: '800', textAlign: 'center' },
+  });

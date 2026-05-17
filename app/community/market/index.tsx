@@ -1,9 +1,15 @@
 import { Link, type Href } from 'expo-router';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { useAppTheme, type AppTheme } from '@/src/theme';
+
 export default function MarketListScreen() {
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <DevScreenHeader screenName="플랜 마켓 목록" screenNumber="S-11M" />
       {/*
         화면: 플랜 마켓 목록 (S-11M)
         기능: 국가/정렬 필터로 등록된 플랜을 탐색하고 크레딧 잔액과 마켓 등록 진입점을 제공한다.
@@ -37,37 +43,38 @@ export default function MarketListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { gap: 16, padding: 20, paddingTop: 32 },
-  header: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
-  title: { color: '#111827', fontSize: 28, fontWeight: '800' },
-  credit: {
-    backgroundColor: '#F3F4F6',
-    borderRadius: 16,
-    overflow: 'hidden',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: {
-    backgroundColor: '#F3F4F6',
-    borderRadius: 18,
-    color: '#374151',
-    overflow: 'hidden',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  card: { backgroundColor: '#FFFFFF', borderRadius: 8, gap: 8, padding: 14 },
-  thumbnail: { backgroundColor: '#E5E7EB', borderRadius: 6, height: 140 },
-  cardTitle: { color: '#111827', fontSize: 18, fontWeight: '800' },
-  cardMeta: { color: '#6B7280' },
-  badge: { color: '#EA580C', fontWeight: '800' },
-  fab: {
-    alignSelf: 'flex-end',
-    backgroundColor: '#EA580C',
-    borderRadius: 22,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-  },
-  fabText: { color: '#FFFFFF', fontWeight: '800' },
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: { backgroundColor: theme.semantic.background, gap: 16, padding: 20, paddingTop: 32 },
+    header: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+    title: { color: theme.semantic.text, fontSize: 28, fontWeight: '800' },
+    credit: {
+      backgroundColor: theme.semantic.surfaceMuted,
+      borderRadius: 16,
+      overflow: 'hidden',
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+    },
+    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    chip: {
+      backgroundColor: theme.semantic.surfaceMuted,
+      borderRadius: 18,
+      color: theme.semantic.textSecondary,
+      overflow: 'hidden',
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    card: { backgroundColor: theme.semantic.surface, borderRadius: 8, gap: 8, padding: 14 },
+    thumbnail: { backgroundColor: theme.semantic.mediaPlaceholder, borderRadius: 6, height: 140 },
+    cardTitle: { color: theme.semantic.text, fontSize: 18, fontWeight: '800' },
+    cardMeta: { color: theme.semantic.textMuted },
+    badge: { color: theme.semantic.primary, fontWeight: '800' },
+    fab: {
+      alignSelf: 'flex-end',
+      backgroundColor: theme.semantic.primary,
+      borderRadius: 22,
+      paddingHorizontal: 18,
+      paddingVertical: 12,
+    },
+    fabText: { color: theme.semantic.onPrimary, fontWeight: '800' },
+  });

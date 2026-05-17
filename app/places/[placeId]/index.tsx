@@ -1,8 +1,14 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { useAppTheme, type AppTheme } from '@/src/theme';
+
 export default function PlaceDetailScreen() {
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
   return (
     <View style={styles.container}>
+      <DevScreenHeader screenName="장소 상세" screenNumber="S-05" />
       {/*
         화면: 장소 상세 (S-05)
         기능: 지도, 정규화된 장소 정보, 외부 지도 연결, 원본 영상 이동, 추출 근거와 수락/거절 액션을 제공한다.
@@ -41,26 +47,33 @@ export default function PlaceDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, gap: 16, padding: 20 },
-  map: {
-    alignItems: 'center',
-    backgroundColor: '#D1D5DB',
-    borderRadius: 8,
-    height: 220,
-    justifyContent: 'center',
-  },
-  mapText: { color: '#374151', fontWeight: '800' },
-  title: { color: '#111827', fontSize: 28, fontWeight: '800' },
-  meta: { color: '#6B7280' },
-  row: { flexDirection: 'row', gap: 10 },
-  outlineButton: { borderColor: '#D1D5DB', borderRadius: 8, borderWidth: 1, flex: 1, padding: 12 },
-  outlineText: { color: '#111827', fontWeight: '700', textAlign: 'center' },
-  section: { backgroundColor: '#FFFFFF', borderRadius: 8, gap: 8, padding: 14 },
-  sectionTitle: { color: '#111827', fontSize: 16, fontWeight: '800' },
-  body: { color: '#374151', lineHeight: 20 },
-  accept: { backgroundColor: '#16A34A', borderRadius: 8, flex: 1, padding: 14 },
-  acceptText: { color: '#FFFFFF', fontWeight: '800', textAlign: 'center' },
-  reject: { backgroundColor: '#F3F4F6', borderRadius: 8, flex: 1, padding: 14 },
-  rejectText: { color: '#DC2626', fontWeight: '800', textAlign: 'center' },
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: { backgroundColor: theme.semantic.background, flex: 1, gap: 16, padding: 20 },
+    map: {
+      alignItems: 'center',
+      backgroundColor: theme.semantic.borderStrong,
+      borderRadius: 8,
+      height: 220,
+      justifyContent: 'center',
+    },
+    mapText: { color: theme.semantic.textSecondary, fontWeight: '800' },
+    title: { color: theme.semantic.text, fontSize: 28, fontWeight: '800' },
+    meta: { color: theme.semantic.textMuted },
+    row: { flexDirection: 'row', gap: 10 },
+    outlineButton: {
+      borderColor: theme.semantic.borderStrong,
+      borderRadius: 8,
+      borderWidth: 1,
+      flex: 1,
+      padding: 12,
+    },
+    outlineText: { color: theme.semantic.text, fontWeight: '700', textAlign: 'center' },
+    section: { backgroundColor: theme.semantic.surface, borderRadius: 8, gap: 8, padding: 14 },
+    sectionTitle: { color: theme.semantic.text, fontSize: 16, fontWeight: '800' },
+    body: { color: theme.semantic.textSecondary, lineHeight: 20 },
+    accept: { backgroundColor: theme.semantic.success, borderRadius: 8, flex: 1, padding: 14 },
+    acceptText: { color: theme.semantic.onPrimary, fontWeight: '800', textAlign: 'center' },
+    reject: { backgroundColor: theme.semantic.surfaceMuted, borderRadius: 8, flex: 1, padding: 14 },
+    rejectText: { color: theme.semantic.danger, fontWeight: '800', textAlign: 'center' },
+  });
