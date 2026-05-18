@@ -1,56 +1,26 @@
 import { Link, router, type Href } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { createPlaceCandidateCardViewModel } from '@/src/features/places/viewModel';
+import { usePlaceCandidateStore } from '@/src/stores/placeCandidates';
 import { useAppTheme, type AppTheme } from '@/src/theme';
-
-type Candidate = {
-  id: string;
-  name: string;
-  category: string;
-  country: string;
-  status: 'accepted' | 'pending';
-};
-
-const initialCandidates: Candidate[] = [
-  {
-    id: 'tsukiji-ramen',
-    name: '츠키지 라멘',
-    category: '맛집',
-    country: '일본',
-    status: 'pending',
-  },
-  { id: 'ginza-cafe', name: '긴자 카페', category: '카페', country: '일본', status: 'pending' },
-  {
-    id: 'shibuya-dessert',
-    name: '시부야 디저트',
-    category: '맛집',
-    country: '일본',
-    status: 'pending',
-  },
-];
 
 export default function RecentPlacesScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
-  const [candidates, setCandidates] = useState(initialCandidates);
+  const candidates = usePlaceCandidateStore((state) => state.candidates);
+  const acceptCandidate = usePlaceCandidateStore((state) => state.acceptCandidate);
+  const rejectCandidate = usePlaceCandidateStore((state) => state.rejectCandidate);
+  const candidateCards = useMemo(
+    () => candidates.map(createPlaceCandidateCardViewModel),
+    [candidates],
+  );
   const acceptedCount = useMemo(
     () => candidates.filter((candidate) => candidate.status === 'accepted').length,
     [candidates],
   );
-
-  const acceptCandidate = (candidateId: string) => {
-    setCandidates((current) =>
-      current.map((candidate) =>
-        candidate.id === candidateId ? { ...candidate, status: 'accepted' } : candidate,
-      ),
-    );
-  };
-
-  const rejectCandidate = (candidateId: string) => {
-    setCandidates((current) => current.filter((candidate) => candidate.id !== candidateId));
-  };
 
   const finishToHome = () => {
     router.replace('/');
@@ -68,23 +38,23 @@ export default function RecentPlacesScreen() {
         <Text style={styles.sourceTitle}>도쿄 맛집 VLOG</Text>
         <Text style={styles.sourceUrl}>https://example.com/tokyo-food</Text>
       </View>
-      {candidates.length === 0 ? (
+      {candidateCards.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyText}>모든 후보를 처리했어요.</Text>
         </View>
       ) : (
-        candidates.map((candidate) => (
+        candidateCards.map((candidate) => (
           <View key={candidate.id} style={styles.card}>
-            <Link href={`/places/${candidate.id}` as Href} asChild>
+            <Link href={`/places/${candidate.placeId}` as Href} asChild>
               <TouchableOpacity style={styles.cardPreview}>
                 <View style={styles.thumbnail} />
                 <View style={styles.cardContent}>
                   <Text style={styles.cardTitle}>{candidate.name}</Text>
                   <Text style={styles.cardMeta}>
-                    {candidate.category} · {candidate.country}
+                    {candidate.category} · {candidate.countryLabel}
                   </Text>
                   <Text style={candidate.status === 'accepted' ? styles.accepted : styles.pending}>
-                    {candidate.status === 'accepted' ? '수락됨' : '확인 대기'}
+                    {candidate.statusLabel}
                   </Text>
                 </View>
               </TouchableOpacity>

@@ -1,5 +1,6 @@
 import {
   mockAccessToken,
+  mockItineraryDetail,
   mockItineraries,
   mockPlaces,
   mockRefreshToken,
@@ -401,20 +402,7 @@ export const handlers: MockHandler[] = [
   {
     method: 'GET',
     path: '/itineraries/:itineraryId',
-    resolve: () =>
-      json({
-        ...mockItineraries[0],
-        items: [
-          {
-            item_id: 'mock-item-1',
-            place_id: 'tokyo-cafe',
-            place_name: '도쿄 감성 카페',
-            day_index: 1,
-            sort_order: 1,
-            planned_duration_minutes: 60,
-          },
-        ],
-      }),
+    resolve: () => json(mockItineraryDetail),
   },
   { method: 'PATCH', path: '/itineraries/:itineraryId', resolve: ({ body }) => json(body) },
   { method: 'DELETE', path: '/itineraries/:itineraryId', resolve: () => empty() },
@@ -656,7 +644,7 @@ export const handlers: MockHandler[] = [
   {
     method: 'GET',
     path: '/public/itineraries/:shareToken',
-    resolve: () => json({ ...mockItineraries[0], items: [] }),
+    resolve: () => json(mockItineraryDetail),
   },
   {
     method: 'GET',

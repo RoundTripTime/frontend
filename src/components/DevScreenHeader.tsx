@@ -8,12 +8,15 @@ type DevScreenHeaderProps = {
   screenNumber: string;
 };
 
-const appEnv = (Constants.expoConfig?.extra?.appEnv as string | undefined) ?? 'development';
+const appMode = Constants.expoConfig?.extra?.appMode as
+  | { showDevScreenHeader?: boolean }
+  | undefined;
+const showDevScreenHeader = appMode?.showDevScreenHeader ?? true;
 
 export function DevScreenHeader({ screenName, screenNumber }: DevScreenHeaderProps) {
   const theme = useAppTheme();
 
-  if (appEnv !== 'development') {
+  if (!showDevScreenHeader) {
     return null;
   }
 

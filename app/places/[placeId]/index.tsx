@@ -1,11 +1,28 @@
+import { useLocalSearchParams } from 'expo-router';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { createPlaceDetailViewModel } from '@/src/features/places/viewModel';
+import { mockPlaces } from '@/src/mocks/fixtures';
 import { useAppTheme, type AppTheme } from '@/src/theme';
 
 export default function PlaceDetailScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
+  const { placeId } = useLocalSearchParams<{ placeId: string }>();
+  const placeSource =
+    mockPlaces.find((place) => place.place_id === placeId) ?? mockPlaces[0] ?? null;
+  const place = placeSource ? createPlaceDetailViewModel(placeSource) : null;
+
+  if (!place) {
+    return (
+      <View style={styles.container}>
+        <DevScreenHeader screenName="장소 상세" screenNumber="S-05" />
+        <Text style={styles.body}>장소 정보를 찾을 수 없습니다.</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <DevScreenHeader screenName="장소 상세" screenNumber="S-05" />
@@ -16,9 +33,12 @@ export default function PlaceDetailScreen() {
       */}
       <View style={styles.map}>
         <Text style={styles.mapText}>지도</Text>
+        <Text style={styles.mapMeta}>
+          {place.latitude.toFixed(5)}, {place.longitude.toFixed(5)}
+        </Text>
       </View>
-      <Text style={styles.title}>도쿄 감성 카페</Text>
-      <Text style={styles.meta}>카페 · 일본 도쿄 시부야</Text>
+      <Text style={styles.title}>{place.name}</Text>
+      <Text style={styles.meta}>{place.meta}</Text>
       <View style={styles.row}>
         <TouchableOpacity style={styles.outlineButton}>
           <Text style={styles.outlineText}>Kakao Maps</Text>
@@ -29,11 +49,11 @@ export default function PlaceDetailScreen() {
       </View>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>원본 영상</Text>
-        <Text style={styles.body}>도쿄 맛집 VLOG · 영상 보러 가기</Text>
+        <Text style={styles.body}>{place.sourceLabel}</Text>
       </View>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>추출 근거</Text>
-        <Text style={styles.body}>영상에서 장소명이 언급된 구간과 지도 정보를 기준으로 추출됨</Text>
+        <Text style={styles.body}>{place.evidence}</Text>
       </View>
       <View style={styles.row}>
         <TouchableOpacity style={styles.accept}>
@@ -58,6 +78,7 @@ const createStyles = (theme: AppTheme) =>
       justifyContent: 'center',
     },
     mapText: { color: theme.semantic.textSecondary, fontWeight: '800' },
+    mapMeta: { color: theme.semantic.textMuted, marginTop: 8 },
     title: { color: theme.semantic.text, fontSize: 28, fontWeight: '800' },
     meta: { color: theme.semantic.textMuted },
     row: { flexDirection: 'row', gap: 10 },

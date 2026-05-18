@@ -1,4 +1,4 @@
-import { Link, type Href } from 'expo-router';
+import { Link, useLocalSearchParams, type Href } from 'expo-router';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
@@ -7,6 +7,8 @@ import { useAppTheme, type AppTheme } from '@/src/theme';
 export default function PlanningAgentScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
+  const { planId } = useLocalSearchParams<{ planId: string }>();
+
   return (
     <View style={styles.container}>
       <DevScreenHeader screenName="Planning Agent 대화" screenNumber="S-08" />
@@ -30,7 +32,7 @@ export default function PlanningAgentScreen() {
       <View style={styles.input}>
         <Text style={styles.placeholder}>메시지 입력</Text>
       </View>
-      <Link href={'/plans/draft-plan' as Href} asChild>
+      <Link href={`/plans/${planId ?? 'draft-plan'}` as Href} asChild>
         <TouchableOpacity style={styles.primaryButton}>
           <Text style={styles.primaryButtonText}>플랜에 반영</Text>
         </TouchableOpacity>

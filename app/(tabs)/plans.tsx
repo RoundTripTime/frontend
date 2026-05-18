@@ -2,28 +2,15 @@ import { Link, type Href } from 'expo-router';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { createPlanListItemViewModel } from '@/src/features/plans/viewModel';
+import { mockItineraries } from '@/src/mocks/fixtures';
 import { useAppTheme, type AppTheme } from '@/src/theme';
-
-const plans = [
-  {
-    id: 'tokyo-summer',
-    title: '도쿄 여름 여행',
-    meta: '일본 · 3박 4일 · 2명',
-    status: '초안',
-    open: '비공개',
-  },
-  {
-    id: 'seoul-weekend',
-    title: '서울 주말 미식',
-    meta: '한국 · 1박 2일 · 3명',
-    status: '확정',
-    open: '공개',
-  },
-];
 
 export default function PlansScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
+  const plans = mockItineraries.map(createPlanListItemViewModel);
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <DevScreenHeader screenName="플랜 목록" screenNumber="S-06" />
@@ -33,25 +20,25 @@ export default function PlansScreen() {
         가능한 다음 이동 화면: S-06N, S-07
       */}
       <View style={styles.header}>
-        <Text style={styles.title}>플랜</Text>
-        <Link href={'/plans/new' as Href} asChild>
-          <TouchableOpacity style={styles.primaryButton}>
-            <Text style={styles.primaryButtonText}>새 플랜 만들기</Text>
-          </TouchableOpacity>
-        </Link>
+        <Text style={styles.title}>내 플랜</Text>
       </View>
       {plans.map((plan) => (
         <Link key={plan.id} href={`/plans/${plan.id}` as Href} asChild>
           <TouchableOpacity style={styles.card}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>{plan.title}</Text>
-              <Text style={styles.badge}>{plan.open}</Text>
+              <Text style={styles.badge}>{plan.visibilityLabel}</Text>
             </View>
             <Text style={styles.cardMeta}>{plan.meta}</Text>
-            <Text style={styles.status}>{plan.status}</Text>
+            <Text style={styles.status}>{plan.statusLabel}</Text>
           </TouchableOpacity>
         </Link>
       ))}
+      <Link href={'/plans/new' as Href} asChild>
+        <TouchableOpacity style={styles.primaryButton}>
+          <Text style={styles.primaryButtonText}>+ 새 플랜 만들기</Text>
+        </TouchableOpacity>
+      </Link>
     </ScrollView>
   );
 }

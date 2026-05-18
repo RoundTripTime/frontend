@@ -1,5 +1,28 @@
 import type { ExpoConfig } from 'expo/config';
 
+const APP_ENV_MODES = {
+  development: {
+    appEnv: 'development',
+    showDevScreenHeader: true,
+    useApiMocks: true,
+  },
+  preview: {
+    appEnv: 'preview',
+    showDevScreenHeader: false,
+    useApiMocks: true,
+  },
+  production: {
+    appEnv: 'production',
+    showDevScreenHeader: false,
+    useApiMocks: false,
+  },
+} as const;
+
+type AppEnvMode = keyof typeof APP_ENV_MODES;
+
+const requestedAppEnv = (process.env.APP_ENV ?? '').trim().toLowerCase();
+const appMode = APP_ENV_MODES[requestedAppEnv as AppEnvMode] ?? APP_ENV_MODES.development;
+
 const googleIosUrlScheme =
   process.env.EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME ?? 'com.googleusercontent.apps.REPLACE_ME';
 const kakaoNativeAppKey =
@@ -66,7 +89,7 @@ const config: ExpoConfig = {
     reactCompiler: true,
   },
   extra: {
-    appEnv: process.env.APP_ENV ?? 'development',
+    appMode,
     googleIosUrlScheme,
     kakaoNativeAppKey,
     // EAS 가 `eas init` 시 `eas.projectId` 를 자동 주입함.

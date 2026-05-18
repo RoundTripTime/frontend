@@ -1,12 +1,18 @@
-import { Link, type Href } from 'expo-router';
+import { Link, useLocalSearchParams, type Href } from 'expo-router';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { createPlanDetailViewModel } from '@/src/features/plans/viewModel';
+import { mockItineraryDetail } from '@/src/mocks/fixtures';
 import { useAppTheme, type AppTheme } from '@/src/theme';
 
 export default function PlanShareScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
+  const { planId } = useLocalSearchParams<{ planId: string }>();
+  const currentPlanId = planId ?? mockItineraryDetail.itinerary_id;
+  const plan = createPlanDetailViewModel({ ...mockItineraryDetail, itinerary_id: currentPlanId });
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <DevScreenHeader screenName="플랜 공유 / 상세" screenNumber="S-09" />
@@ -15,21 +21,27 @@ export default function PlanShareScreen() {
         기능: 완성된 플랜 요약, 읽기 전용 일정, 지도 전체 보기, 공유와 편집 액션을 제공한다.
         가능한 다음 이동 화면: S-07
       */}
-      <Text style={styles.title}>도쿄 여름 여행</Text>
-      <Text style={styles.meta}>3박 4일 · 2명 · 장소 8개</Text>
+      <Text style={styles.title}>{plan.title}</Text>
+      <Text style={styles.meta}>
+        {plan.dateRangeLabel} · {plan.partyLabel} · 장소 {plan.placeCount}개
+      </Text>
       <View style={styles.map}>
         <Text style={styles.mapText}>지도 전체 보기</Text>
       </View>
-      {['Day 1', 'Day 2', 'Day 3'].map((day) => (
-        <View key={day} style={styles.section}>
-          <Text style={styles.sectionTitle}>{day}</Text>
-          <Text style={styles.place}>도쿄 감성 카페</Text>
+      {plan.days.map((day) => (
+        <View key={day.dayIndex} style={styles.section}>
+          <Text style={styles.sectionTitle}>{day.title}</Text>
+          {day.items.map((item) => (
+            <Text key={item.itemId} style={styles.place}>
+              {item.name}
+            </Text>
+          ))}
         </View>
       ))}
       <TouchableOpacity style={styles.primaryButton}>
         <Text style={styles.primaryButtonText}>공유</Text>
       </TouchableOpacity>
-      <Link href={'/plans/draft-plan' as Href} asChild>
+      <Link href={`/plans/${plan.id}` as Href} asChild>
         <TouchableOpacity style={styles.secondaryButton}>
           <Text style={styles.secondaryButtonText}>편집</Text>
         </TouchableOpacity>

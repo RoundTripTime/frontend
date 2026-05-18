@@ -9,9 +9,10 @@ const LEVEL_ORDER: Record<LogLevel, number> = {
   error: 3,
 };
 
-const appEnv = (Constants.expoConfig?.extra?.appEnv as string | undefined) ?? 'development';
+const appMode = Constants.expoConfig?.extra?.appMode as { appEnv?: string } | undefined;
+const currentAppEnv = appMode?.appEnv ?? 'development';
 
-const minLevel: LogLevel = appEnv === 'production' ? 'warn' : 'debug';
+const minLevel: LogLevel = currentAppEnv === 'production' ? 'warn' : 'debug';
 
 function shouldLog(level: LogLevel): boolean {
   return LEVEL_ORDER[level] >= LEVEL_ORDER[minLevel];
@@ -32,5 +33,5 @@ export const logger = {
   warn: (...args: unknown[]) => emit('warn', args),
   error: (...args: unknown[]) => emit('error', args),
   level: minLevel,
-  env: appEnv,
+  env: currentAppEnv,
 };

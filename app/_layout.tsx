@@ -92,8 +92,13 @@ function AuthGate() {
         기능: 인증 상태에 따라 온보딩과 하단 탭을 분기하고 상세 화면 route stack을 제공한다.
         가능한 다음 이동 화면: S-01, S-02, S-03, S-04, S-05, S-06, S-07, S-07-M, S-08, S-09, S-10, S-11, S-11A, S-11M, S-11MP, S-11MAD, S-11MR, S-12
       */}
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack
+        screenOptions={{
+          headerBackButtonDisplayMode: 'minimal',
+          headerBackTitle: '',
+        }}
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '' }} />
         <Stack.Screen name="(auth)/onboarding/index" options={{ title: '온보딩' }} />
         <Stack.Screen name="(share)/receive/index" options={{ title: '링크 수신' }} />
         <Stack.Screen name="places/recent/index" options={{ title: '최근 추가한 장소' }} />

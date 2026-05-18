@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { mockPlaces } from '@/src/mocks/fixtures';
 import { useAppTheme, type AppTheme } from '@/src/theme';
 
 type SavedPlace = {
@@ -13,11 +14,12 @@ type SavedPlace = {
 };
 
 const quickDestinations = ['일본', '한국', '태국', '베트남', '기타'];
-const savedPlaces: SavedPlace[] = [
-  { id: 'tokyo-cafe', name: '도쿄 감성 카페', category: '카페', country: '일본' },
-  { id: 'tsukiji-ramen', name: '츠키지 라멘', category: '맛집', country: '일본' },
-  { id: 'ginza-cafe', name: '긴자 카페', category: '카페', country: '일본' },
-];
+const savedPlaces: SavedPlace[] = mockPlaces.map((place) => ({
+  id: place.place_id,
+  name: place.canonical_name,
+  category: place.category,
+  country: place.country_code,
+}));
 
 export default function NewPlanScreen() {
   const theme = useAppTheme();

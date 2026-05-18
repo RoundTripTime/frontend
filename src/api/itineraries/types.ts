@@ -23,6 +23,8 @@ export type ItineraryItem = {
   item_id: ID;
   place_id: ID;
   place_name: string;
+  latitude: number;
+  longitude: number;
   day_index: number | null;
   sort_order: number | null;
   planned_duration_minutes: number | null;
