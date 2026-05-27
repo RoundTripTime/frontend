@@ -27,6 +27,21 @@ const googleIosUrlScheme =
   process.env.EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME ?? 'com.googleusercontent.apps.REPLACE_ME';
 const kakaoNativeAppKey =
   process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY ?? 'KAKAO_NATIVE_APP_KEY_REQUIRED';
+const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://api.example.com';
+const usesCleartextApiTraffic = apiBaseUrl.startsWith('http://');
+
+const androidConfig: NonNullable<ExpoConfig['android']> & { usesCleartextTraffic?: boolean } = {
+  package: 'com.seungmin.roundtrip',
+  adaptiveIcon: {
+    backgroundColor: '#3182F6',
+    foregroundImage: './assets/images/android-icon-foreground.png',
+    backgroundImage: './assets/images/android-icon-background.png',
+    monochromeImage: './assets/images/android-icon-monochrome.png',
+  },
+  edgeToEdgeEnabled: true,
+  predictiveBackGestureEnabled: false,
+  usesCleartextTraffic: usesCleartextApiTraffic,
+};
 
 const config: ExpoConfig = {
   name: 'Round Trip',
@@ -39,19 +54,16 @@ const config: ExpoConfig = {
   icon: './assets/images/icon.png',
   ios: {
     bundleIdentifier: 'com.seungmin.roundtrip',
+    infoPlist: usesCleartextApiTraffic
+      ? {
+          NSAppTransportSecurity: {
+            NSAllowsArbitraryLoads: true,
+          },
+        }
+      : undefined,
     supportsTablet: false,
   },
-  android: {
-    package: 'com.seungmin.roundtrip',
-    adaptiveIcon: {
-      backgroundColor: '#3182F6',
-      foregroundImage: './assets/images/android-icon-foreground.png',
-      backgroundImage: './assets/images/android-icon-background.png',
-      monochromeImage: './assets/images/android-icon-monochrome.png',
-    },
-    edgeToEdgeEnabled: true,
-    predictiveBackGestureEnabled: false,
-  },
+  android: androidConfig,
   web: {
     output: 'static',
     favicon: './assets/images/favicon.png',
@@ -90,6 +102,7 @@ const config: ExpoConfig = {
   },
   extra: {
     appMode,
+    apiBaseUrl,
     googleIosUrlScheme,
     kakaoNativeAppKey,
     // EAS 가 `eas init` 시 `eas.projectId` 를 자동 주입함.

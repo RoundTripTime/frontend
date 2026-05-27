@@ -1,30 +1,51 @@
 import { useLocalSearchParams } from 'expo-router';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { usePlaceQuery } from '@/src/api/places/hooks';
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { RefreshableScrollView } from '@/src/components/RefreshableScrollView';
 import { createPlaceDetailViewModel } from '@/src/features/places/viewModel';
-import { mockPlaces } from '@/src/mocks/fixtures';
 import { useAppTheme, type AppTheme } from '@/src/theme';
 
 export default function PlaceDetailScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
   const { placeId } = useLocalSearchParams<{ placeId: string }>();
-  const placeSource =
-    mockPlaces.find((place) => place.place_id === placeId) ?? mockPlaces[0] ?? null;
-  const place = placeSource ? createPlaceDetailViewModel(placeSource) : null;
+  const placeQuery = usePlaceQuery(placeId ?? '');
+  const place = placeQuery.data ? createPlaceDetailViewModel(placeQuery.data) : null;
+
+  if (placeQuery.isLoading) {
+    return (
+      <RefreshableScrollView
+        contentContainerStyle={styles.container}
+        style={styles.scroll}
+        onRefresh={() => placeQuery.refetch()}
+      >
+        <DevScreenHeader screenName="장소 상세" screenNumber="S-05" />
+        <Text style={styles.body}>장소 정보를 불러오는 중입니다.</Text>
+      </RefreshableScrollView>
+    );
+  }
 
   if (!place) {
     return (
-      <View style={styles.container}>
+      <RefreshableScrollView
+        contentContainerStyle={styles.container}
+        style={styles.scroll}
+        onRefresh={() => placeQuery.refetch()}
+      >
         <DevScreenHeader screenName="장소 상세" screenNumber="S-05" />
-        <Text style={styles.body}>장소 정보를 찾을 수 없습니다.</Text>
-      </View>
+        <Text style={styles.body}>장소 정보를 불러오지 못했습니다.</Text>
+      </RefreshableScrollView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <RefreshableScrollView
+      contentContainerStyle={styles.container}
+      style={styles.scroll}
+      onRefresh={() => placeQuery.refetch()}
+    >
       <DevScreenHeader screenName="장소 상세" screenNumber="S-05" />
       {/*
         화면: 장소 상세 (S-05)
@@ -63,13 +84,14 @@ export default function PlaceDetailScreen() {
           <Text style={styles.rejectText}>거절</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </RefreshableScrollView>
   );
 }
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    container: { backgroundColor: theme.semantic.background, flex: 1, gap: 16, padding: 20 },
+    container: { backgroundColor: theme.semantic.background, flexGrow: 1, gap: 16, padding: 20 },
+    scroll: { backgroundColor: theme.semantic.background, flex: 1 },
     map: {
       alignItems: 'center',
       backgroundColor: theme.semantic.borderStrong,

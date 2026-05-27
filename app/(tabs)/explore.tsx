@@ -1,20 +1,25 @@
 import { Link, type Href } from 'expo-router';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { useDiscoverPlacesQuery } from '@/src/api/places/hooks';
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { CardGridSkeleton } from '@/src/components/LoadingSkeleton';
+import { RefreshableScrollView } from '@/src/components/RefreshableScrollView';
+import { useMinimumLoading } from '@/src/hooks/useMinimumLoading';
 import { useAppTheme, type AppTheme } from '@/src/theme';
-
-const recommendations = [
-  { id: 'osaka-castle', name: '오사카 성', category: '관광명소', country: '일본' },
-  { id: 'jeju-cafe', name: '제주 바다 카페', category: '카페', country: '한국' },
-  { id: 'danang-resort', name: '다낭 리조트', category: '숙박', country: '베트남' },
-];
 
 export default function ExploreScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
+  const discoverQuery = useDiscoverPlacesQuery();
+  const isInitialLoading = useMinimumLoading(discoverQuery.isPending && !discoverQuery.data);
+  const recommendations = discoverQuery.data?.results ?? [];
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <RefreshableScrollView
+      contentContainerStyle={styles.container}
+      style={styles.scroll}
+      onRefresh={() => discoverQuery.refetch()}
+    >
       <DevScreenHeader screenName="둘러보기" screenNumber="S-10" />
       {/*
         화면: 둘러보기 (S-10)
@@ -23,37 +28,46 @@ export default function ExploreScreen() {
       */}
       <Text style={styles.title}>둘러보기</Text>
       <Text style={styles.sectionLabel}>지금 인기있는 장소</Text>
-      <View style={styles.chips}>
+      <ScrollView
+        horizontal
+        contentContainerStyle={styles.chips}
+        showsHorizontalScrollIndicator={false}
+      >
         {['전체', '관광명소', '맛집', '카페', '숙박', '한국', '일본', '동남아'].map((label) => (
           <Text key={label} style={styles.chip}>
             {label}
           </Text>
         ))}
-      </View>
-      <View style={styles.grid}>
-        {recommendations.map((place) => (
-          <Link key={place.id} href={`/places/${place.id}` as Href} asChild>
-            <TouchableOpacity style={styles.card}>
-              <View style={styles.thumbnail} />
-              <Text style={styles.cardTitle}>{place.name}</Text>
-              <Text style={styles.cardMeta}>
-                {place.category} · {place.country}
-              </Text>
-              <Text style={styles.save}>저장</Text>
-            </TouchableOpacity>
-          </Link>
-        ))}
-      </View>
-    </ScrollView>
+      </ScrollView>
+      {isInitialLoading ? (
+        <CardGridSkeleton />
+      ) : (
+        <View style={styles.grid}>
+          {recommendations.map((place) => (
+            <Link key={place.place_id} href={`/places/${place.place_id}` as Href} asChild>
+              <TouchableOpacity style={styles.card}>
+                <View style={styles.thumbnail} />
+                <Text style={styles.cardTitle}>{place.canonical_name}</Text>
+                <Text style={styles.cardMeta}>
+                  {place.category} · {place.country_code}
+                </Text>
+                <Text style={styles.save}>저장</Text>
+              </TouchableOpacity>
+            </Link>
+          ))}
+        </View>
+      )}
+    </RefreshableScrollView>
   );
 }
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: { backgroundColor: theme.semantic.background, gap: 18, padding: 20, paddingTop: 64 },
-    title: { color: theme.semantic.text, fontSize: 30, fontWeight: '800' },
+    scroll: { backgroundColor: theme.semantic.background, flex: 1 },
+    title: { color: theme.semantic.text, fontSize: 34, fontWeight: '900' },
     sectionLabel: { color: theme.semantic.primary, fontSize: 14, fontWeight: '700' },
-    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    chips: { flexDirection: 'row', gap: 8, paddingRight: 20 },
     chip: {
       backgroundColor: theme.semantic.surfaceMuted,
       borderRadius: 18,

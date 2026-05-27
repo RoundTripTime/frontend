@@ -57,7 +57,7 @@ export default function SettingsScreen() {
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: { backgroundColor: theme.semantic.background, gap: 12, padding: 20, paddingTop: 64 },
-    title: { color: theme.semantic.text, fontSize: 30, fontWeight: '800' },
+    title: { color: theme.semantic.text, fontSize: 34, fontWeight: '900' },
     profile: {
       alignItems: 'center',
       backgroundColor: theme.semantic.surface,

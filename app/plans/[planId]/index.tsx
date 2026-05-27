@@ -1,29 +1,36 @@
 import { Link, Stack, useLocalSearchParams, type Href } from 'expo-router';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { useItineraryQuery } from '@/src/api/itineraries/hooks';
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { RefreshableScrollView } from '@/src/components/RefreshableScrollView';
 import { createPlanDetailViewModel } from '@/src/features/plans/viewModel';
-import { mockItineraryDetail } from '@/src/mocks/fixtures';
 import { useAppTheme, type AppTheme } from '@/src/theme';
 
 export default function PlanEditScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
   const { planId } = useLocalSearchParams<{ planId: string }>();
-  const currentPlanId = planId ?? mockItineraryDetail.itinerary_id;
-  const plan = createPlanDetailViewModel({ ...mockItineraryDetail, itinerary_id: currentPlanId });
+  const currentPlanId = planId ?? '';
+  const planQuery = useItineraryQuery(currentPlanId);
+  const plan = planQuery.data ? createPlanDetailViewModel(planQuery.data) : null;
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <RefreshableScrollView
+      contentContainerStyle={styles.container}
+      style={styles.scroll}
+      onRefresh={() => planQuery.refetch()}
+    >
       <Stack.Screen
         options={{
-          headerRight: () => (
-            <Link href={`/plans/${plan.id}/share` as Href} asChild>
-              <TouchableOpacity>
-                <Text style={styles.headerAction}>공유</Text>
-              </TouchableOpacity>
-            </Link>
-          ),
+          headerRight: () =>
+            plan ? (
+              <Link href={`/plans/${plan.id}/share` as Href} asChild>
+                <TouchableOpacity>
+                  <Text style={styles.headerAction}>공유</Text>
+                </TouchableOpacity>
+              </Link>
+            ) : null,
         }}
       />
       <DevScreenHeader screenName="플랜 상세 / 편집" screenNumber="S-07" />
@@ -32,60 +39,69 @@ export default function PlanEditScreen() {
         기능: 여행 정보, 일자별 장소 배치, 미배치 장소 풀, Agent, 지도, 공유, OTA 예약, 저장 액션을 제공한다.
         가능한 다음 이동 화면: S-05, S-07-M, S-08, S-09
       */}
-      <Text style={styles.title}>{plan.title}</Text>
-      <Text style={styles.meta}>{plan.meta}</Text>
-      <View style={styles.actions}>
-        <Link href={`/plans/${plan.id}/map` as Href} asChild>
-          <TouchableOpacity style={styles.action}>
-            <Text style={styles.actionText}>지도</Text>
-          </TouchableOpacity>
-        </Link>
-        <Link href={`/plans/${plan.id}/agent` as Href} asChild>
-          <TouchableOpacity style={styles.action}>
-            <Text style={styles.actionText}>Agent</Text>
-          </TouchableOpacity>
-        </Link>
-      </View>
-      {plan.days.map((day) => (
-        <View key={day.dayIndex} style={styles.section}>
-          <Text style={styles.sectionTitle}>{day.title}</Text>
-          {day.items.map((item) => (
-            <Text key={item.itemId} style={styles.place}>
-              {item.name} · {item.durationLabel}
-            </Text>
-          ))}
-        </View>
-      ))}
-      {plan.unassignedItems.length > 0 ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>미배치 장소</Text>
-          {plan.unassignedItems.map((item) => (
-            <Text key={item.itemId} style={styles.place}>
-              {item.name} · {item.durationLabel}
-            </Text>
-          ))}
-        </View>
+      {planQuery.isLoading ? <Text style={styles.place}>플랜을 불러오는 중입니다.</Text> : null}
+      {!planQuery.isLoading && !plan ? (
+        <Text style={styles.place}>플랜 정보를 불러오지 못했습니다.</Text>
       ) : null}
-      <Link href={`/plans/${plan.id}/share` as Href} asChild>
-        <TouchableOpacity style={styles.primaryButton}>
-          <Text style={styles.primaryButtonText}>저장</Text>
-        </TouchableOpacity>
-      </Link>
-      <View style={styles.bookingGrid}>
-        <TouchableOpacity style={styles.bookingBlock}>
-          <Text style={styles.sectionTitle}>숙소 예약</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.bookingBlock}>
-          <Text style={styles.sectionTitle}>항공 예약</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+      {plan ? (
+        <>
+          <Text style={styles.title}>{plan.title}</Text>
+          <Text style={styles.meta}>{plan.meta}</Text>
+          <View style={styles.actions}>
+            <Link href={`/plans/${plan.id}/map` as Href} asChild>
+              <TouchableOpacity style={styles.action}>
+                <Text style={styles.actionText}>지도</Text>
+              </TouchableOpacity>
+            </Link>
+            <Link href={`/plans/${plan.id}/agent` as Href} asChild>
+              <TouchableOpacity style={styles.action}>
+                <Text style={styles.actionText}>Agent</Text>
+              </TouchableOpacity>
+            </Link>
+          </View>
+          {plan.days.map((day) => (
+            <View key={day.dayIndex} style={styles.section}>
+              <Text style={styles.sectionTitle}>{day.title}</Text>
+              {day.items.map((item) => (
+                <Text key={item.itemId} style={styles.place}>
+                  {item.name} · {item.durationLabel}
+                </Text>
+              ))}
+            </View>
+          ))}
+          {plan.unassignedItems.length > 0 ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>미배치 장소</Text>
+              {plan.unassignedItems.map((item) => (
+                <Text key={item.itemId} style={styles.place}>
+                  {item.name} · {item.durationLabel}
+                </Text>
+              ))}
+            </View>
+          ) : null}
+          <Link href={`/plans/${plan.id}/share` as Href} asChild>
+            <TouchableOpacity style={styles.primaryButton}>
+              <Text style={styles.primaryButtonText}>저장</Text>
+            </TouchableOpacity>
+          </Link>
+          <View style={styles.bookingGrid}>
+            <TouchableOpacity style={styles.bookingBlock}>
+              <Text style={styles.sectionTitle}>숙소 예약</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.bookingBlock}>
+              <Text style={styles.sectionTitle}>항공 예약</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      ) : null}
+    </RefreshableScrollView>
   );
 }
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: { backgroundColor: theme.semantic.background, gap: 14, padding: 20, paddingTop: 32 },
+    scroll: { backgroundColor: theme.semantic.background, flex: 1 },
     headerAction: { color: theme.semantic.primary, fontSize: 16, fontWeight: '800' },
     title: { color: theme.semantic.text, fontSize: 28, fontWeight: '800' },
     meta: { color: theme.semantic.textMuted },

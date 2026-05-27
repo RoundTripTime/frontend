@@ -1,38 +1,93 @@
-import { Link, router, type Href } from 'expo-router';
-import { useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { Link, router, type Href, useLocalSearchParams } from 'expo-router';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
+import { listJobCandidates } from '@/src/api/candidates';
+import { submitSourceLink } from '@/src/api/sourceLinks';
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { usePlaceCandidateStore } from '@/src/stores/placeCandidates';
 import { useAppTheme, type AppTheme } from '@/src/theme';
+
+const sampleUrl = 'https://www.youtube.com/shorts/roundtrip-tokyo-food';
 
 export default function ShareReceiveScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      router.replace('/');
-    }, 1500);
+  const params = useLocalSearchParams<{ url?: string }>();
+  const incomingUrl = useMemo(() => {
+    const value = Array.isArray(params.url) ? params.url[0] : params.url;
+    return value?.trim() || '';
+  }, [params.url]);
+  const [url, setUrl] = useState(incomingUrl || sampleUrl);
+  const [status, setStatus] = useState<'idle' | 'submitting' | 'succeeded' | 'failed'>('idle');
+  const [message, setMessage] = useState('');
+  const setAnalysisResult = usePlaceCandidateStore((state) => state.setAnalysisResult);
+  const autoSubmittedRef = useRef(false);
 
-    return () => clearTimeout(timer);
-  }, []);
+  const createAnalysisJob = async (sharedUrl: string) => {
+    const submitted = await submitSourceLink({ url: sharedUrl });
+    const candidates = await listJobCandidates(submitted.job_id);
+
+    setAnalysisResult(candidates);
+  };
+
+  const submitUrl = (sharedUrl = url) => {
+    const trimmedUrl = sharedUrl.trim();
+
+    if (!trimmedUrl) {
+      setStatus('failed');
+      setMessage('분석할 URL을 입력해주세요.');
+      return;
+    }
+
+    setStatus('submitting');
+    setMessage('공유 링크를 제출하고 있어요.');
+    router.replace('/');
+
+    void createAnalysisJob(trimmedUrl);
+  };
+
+  useEffect(() => {
+    if (!incomingUrl || autoSubmittedRef.current) {
+      return;
+    }
+
+    autoSubmittedRef.current = true;
+    setUrl(incomingUrl);
+    submitUrl(incomingUrl);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [incomingUrl]);
+
+  const isSubmitting = status === 'submitting';
+  const canSubmit = !isSubmitting;
 
   return (
     <View style={styles.container}>
       <DevScreenHeader screenName="링크 수신 / 분석 중" screenNumber="S-03" />
       {/*
         화면: 링크 수신 / 분석 중 (S-03)
-        기능: 공유된 링크 분석이 백그라운드에서 시작되었음을 안내하고 홈으로 자동 복귀한다.
+        기능: iOS Share Extension / Android Share Intent로 전달된 URL을 백엔드에 제출해 장소 분석 잡을 생성한다. 개발 단계에서는 URL 입력과 제출 버튼으로 공유 intent 진입을 시뮬레이션한다.
         가능한 다음 이동 화면: S-02, S-04
       */}
-      <View style={styles.preview}>
-        <View style={styles.previewThumb} />
-        <View style={styles.previewCopy}>
-          <Text style={styles.platform}>YouTube</Text>
-          <Text style={styles.url}>https://example.com/travel-vlog</Text>
-        </View>
-      </View>
-      <ActivityIndicator color={theme.semantic.primary} size="large" />
-      <Text style={styles.message}>장소를 찾고 있어요. 잠시 후 알려드릴게요.</Text>
+      <TextInput
+        autoCapitalize="none"
+        autoCorrect={false}
+        editable={!isSubmitting}
+        inputMode="url"
+        onChangeText={setUrl}
+        placeholder="공유 URL을 입력하세요"
+        placeholderTextColor={theme.semantic.placeholder}
+        style={styles.input}
+        value={url}
+      />
+      <TouchableOpacity
+        disabled={!canSubmit}
+        onPress={() => submitUrl()}
+        style={[styles.submitButton, !canSubmit && styles.disabledButton]}
+      >
+        <Text style={styles.submitButtonText}>{isSubmitting ? '제출 중' : '제출'}</Text>
+      </TouchableOpacity>
+      {message ? <Text style={styles.message}>{message}</Text> : null}
       <Link href={'/' as Href} style={styles.link}>
         앱으로 돌아가기
       </Link>
@@ -46,28 +101,32 @@ const createStyles = (theme: AppTheme) =>
       backgroundColor: theme.semantic.background,
       alignItems: 'center',
       flex: 1,
-      gap: 22,
+      gap: 14,
       justifyContent: 'center',
       padding: 20,
     },
-    preview: {
-      alignItems: 'center',
-      backgroundColor: theme.semantic.surface,
+    input: {
+      backgroundColor: theme.semantic.input,
+      borderColor: theme.semantic.border,
       borderRadius: 8,
-      flexDirection: 'row',
-      gap: 12,
-      padding: 16,
+      borderWidth: 1,
+      color: theme.semantic.text,
+      paddingHorizontal: 12,
+      paddingVertical: 12,
       width: '100%',
     },
-    previewThumb: {
-      backgroundColor: theme.semantic.mediaPlaceholder,
-      borderRadius: 6,
-      height: 54,
-      width: 54,
+    submitButton: {
+      backgroundColor: theme.semantic.primary,
+      borderRadius: 8,
+      padding: 13,
+      width: '100%',
     },
-    previewCopy: { flex: 1, gap: 6 },
-    platform: { color: theme.semantic.primary, fontWeight: '800' },
-    url: { color: theme.semantic.textSecondary },
-    message: { color: theme.semantic.text, fontSize: 18, fontWeight: '700', textAlign: 'center' },
+    submitButtonText: {
+      color: theme.semantic.onPrimary,
+      fontWeight: '800',
+      textAlign: 'center',
+    },
+    disabledButton: { opacity: 0.5 },
+    message: { color: theme.semantic.textSecondary, fontWeight: '700', textAlign: 'center' },
     link: { color: theme.semantic.textMuted, fontWeight: '700' },
   });

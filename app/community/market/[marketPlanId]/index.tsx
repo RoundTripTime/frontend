@@ -1,48 +1,76 @@
-import { Link, type Href } from 'expo-router';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Link, useLocalSearchParams, type Href } from 'expo-router';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { useMarketPlanPreviewQuery } from '@/src/api/market/hooks';
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { RefreshableScrollView } from '@/src/components/RefreshableScrollView';
 import { useAppTheme, type AppTheme } from '@/src/theme';
 
 export default function MarketPlanDetailScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
+  const { marketPlanId } = useLocalSearchParams<{ marketPlanId: string }>();
+  const previewQuery = useMarketPlanPreviewQuery(marketPlanId ?? '');
+  const preview = previewQuery.data;
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <RefreshableScrollView
+      contentContainerStyle={styles.container}
+      style={styles.scroll}
+      onRefresh={() => previewQuery.refetch()}
+    >
       <DevScreenHeader screenName="플랜 마켓 상세 / 미리보기 / 열람" screenNumber="S-11MP" />
       {/*
         화면: 플랜 마켓 상세 / 미리보기 / 열람 (S-11MP)
         기능: 무료 미리보기, 크레딧 열람, 잠금 영역, 전체 일정, 내 플랜 복사 액션을 제공한다.
         가능한 다음 이동 화면: S-05, S-07, S-11MAD
       */}
-      <Text style={styles.title}>도쿄 3박 4일 실제 다녀온 플랜</Text>
-      <Text style={styles.meta}>일본 · 3박 4일 · 2명 · 여행자 민</Text>
-      <Text style={styles.badge}>✈️ 실제 다녀온 플랜 인증</Text>
-      <Text style={styles.body}>카페와 맛집 중심으로 이동 시간을 줄인 플랜입니다.</Text>
-      <View style={styles.preview}>
-        <Text style={styles.sectionTitle}>미리보기 장소</Text>
-        <Text style={styles.place}>도쿄 감성 카페</Text>
-      </View>
-      <View style={styles.locked}>
-        <Text style={styles.lockedText}>+ 7개 장소가 숨겨져 있어요</Text>
-      </View>
-      <Link href={'/community/market/sample-market-plan/credits' as Href} asChild>
-        <TouchableOpacity style={styles.primaryButton}>
-          <Text style={styles.primaryButtonText}>💎 1 크레딧으로 열기</Text>
-        </TouchableOpacity>
-      </Link>
-      <Link href={'/plans/draft-plan' as Href} asChild>
-        <TouchableOpacity style={styles.secondaryButton}>
-          <Text style={styles.secondaryButtonText}>내 플랜으로 복사하기</Text>
-        </TouchableOpacity>
-      </Link>
-    </ScrollView>
+      {previewQuery.isLoading ? (
+        <Text style={styles.body}>마켓 플랜을 불러오는 중입니다.</Text>
+      ) : null}
+      {preview ? (
+        <>
+          <Text style={styles.title}>{preview.title}</Text>
+          <Text style={styles.meta}>
+            {preview.destination_region} · {preview.duration_nights}박 · {preview.party_size}명 ·{' '}
+            {preview.author.nickname}
+          </Text>
+          <Text style={styles.badge}>✈️ 실제 다녀온 플랜 인증</Text>
+          <Text style={styles.body}>{preview.description}</Text>
+          <View style={styles.preview}>
+            <Text style={styles.sectionTitle}>미리보기 장소</Text>
+            {preview.preview_places.map((place) => (
+              <Text key={place.place_id} style={styles.place}>
+                {place.canonical_name}
+              </Text>
+            ))}
+          </View>
+          <View style={styles.locked}>
+            <Text style={styles.lockedText}>
+              + {preview.hidden_place_count}개 장소가 숨겨져 있어요
+            </Text>
+          </View>
+          <Link href={`/community/market/${preview.market_plan_id}/credits` as Href} asChild>
+            <TouchableOpacity style={styles.primaryButton}>
+              <Text style={styles.primaryButtonText}>
+                💎 {preview.credit_price} 크레딧으로 열기
+              </Text>
+            </TouchableOpacity>
+          </Link>
+          <Link href={'/plans/draft-plan' as Href} asChild>
+            <TouchableOpacity style={styles.secondaryButton}>
+              <Text style={styles.secondaryButtonText}>내 플랜으로 복사하기</Text>
+            </TouchableOpacity>
+          </Link>
+        </>
+      ) : null}
+    </RefreshableScrollView>
   );
 }
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: { backgroundColor: theme.semantic.background, gap: 14, padding: 20, paddingTop: 32 },
+    scroll: { backgroundColor: theme.semantic.background, flex: 1 },
     title: { color: theme.semantic.text, fontSize: 26, fontWeight: '800' },
     meta: { color: theme.semantic.textMuted },
     badge: { color: theme.semantic.primary, fontWeight: '800' },

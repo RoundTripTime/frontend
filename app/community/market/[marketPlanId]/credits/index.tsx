@@ -1,14 +1,21 @@
 import { Link, type Href } from 'expo-router';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { useCreditBalanceQuery } from '@/src/api/credits/hooks';
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { RefreshableScrollView } from '@/src/components/RefreshableScrollView';
 import { useAppTheme, type AppTheme } from '@/src/theme';
 
 export default function CreditsAdScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
+  const creditQuery = useCreditBalanceQuery();
   return (
-    <View style={styles.container}>
+    <RefreshableScrollView
+      contentContainerStyle={styles.container}
+      style={styles.scroll}
+      onRefresh={() => creditQuery.refetch()}
+    >
       <DevScreenHeader screenName="광고 시청 / 크레딧 충전" screenNumber="S-11MAD" />
       {/*
         화면: 광고 시청 / 크레딧 충전 (S-11MAD)
@@ -16,7 +23,7 @@ export default function CreditsAdScreen() {
         가능한 다음 이동 화면: S-11MP
       */}
       <Text style={styles.title}>크레딧 충전</Text>
-      <Text style={styles.credit}>현재 크레딧 💎 0</Text>
+      <Text style={styles.credit}>현재 크레딧 💎 {creditQuery.data?.balance ?? 0}</Text>
       <Text style={styles.progress}>3/5 시청 완료</Text>
       <View style={styles.progressBar}>
         <View style={styles.progressFill} />
@@ -30,7 +37,7 @@ export default function CreditsAdScreen() {
           <Text style={styles.secondaryButtonText}>닫기</Text>
         </TouchableOpacity>
       </Link>
-    </View>
+    </RefreshableScrollView>
   );
 }
 
@@ -38,11 +45,12 @@ const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: {
       backgroundColor: theme.semantic.background,
-      flex: 1,
+      flexGrow: 1,
       gap: 16,
       justifyContent: 'center',
       padding: 20,
     },
+    scroll: { backgroundColor: theme.semantic.background, flex: 1 },
     title: { color: theme.semantic.text, fontSize: 26, fontWeight: '800', textAlign: 'center' },
     credit: { color: theme.semantic.text, fontSize: 18, fontWeight: '800', textAlign: 'center' },
     progress: { color: theme.semantic.textMuted, textAlign: 'center' },

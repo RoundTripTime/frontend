@@ -1,14 +1,24 @@
 import { Link, type Href } from 'expo-router';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { useCreditBalanceQuery } from '@/src/api/credits/hooks';
+import { useMarketPlansQuery } from '@/src/api/market/hooks';
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { RefreshableScrollView } from '@/src/components/RefreshableScrollView';
 import { useAppTheme, type AppTheme } from '@/src/theme';
 
 export default function MarketListScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
+  const marketPlansQuery = useMarketPlansQuery();
+  const creditQuery = useCreditBalanceQuery();
+  const marketPlans = marketPlansQuery.data?.items ?? [];
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <RefreshableScrollView
+      contentContainerStyle={styles.container}
+      style={styles.scroll}
+      onRefresh={() => Promise.all([marketPlansQuery.refetch(), creditQuery.refetch()])}
+    >
       <DevScreenHeader screenName="플랜 마켓 목록" screenNumber="S-11M" />
       {/*
         화면: 플랜 마켓 목록 (S-11M)
@@ -17,7 +27,7 @@ export default function MarketListScreen() {
       */}
       <View style={styles.header}>
         <Text style={styles.title}>플랜 마켓</Text>
-        <Text style={styles.credit}>💎 3</Text>
+        <Text style={styles.credit}>💎 {creditQuery.data?.balance ?? 0}</Text>
       </View>
       <View style={styles.chips}>
         {['전체', '일본', '한국', '동남아', '최신순', '인기순'].map((chip) => (
@@ -26,26 +36,39 @@ export default function MarketListScreen() {
           </Text>
         ))}
       </View>
-      <Link href={'/community/market/sample-market-plan' as Href} asChild>
-        <TouchableOpacity style={styles.card}>
-          <View style={styles.thumbnail} />
-          <Text style={styles.cardTitle}>도쿄 3박 4일 실제 다녀온 플랜</Text>
-          <Text style={styles.cardMeta}>일본 · 3박 4일 · 2명 · 장소 8개 · 조회 128</Text>
-          <Text style={styles.badge}>✈️ 실제 다녀온 플랜 · 💎 1</Text>
-        </TouchableOpacity>
-      </Link>
+      {marketPlansQuery.isLoading ? (
+        <Text style={styles.cardMeta}>마켓 플랜을 불러오는 중입니다.</Text>
+      ) : null}
+      {marketPlans.map((plan) => (
+        <Link
+          key={plan.market_plan_id}
+          href={`/community/market/${plan.market_plan_id}` as Href}
+          asChild
+        >
+          <TouchableOpacity style={styles.card}>
+            <View style={styles.thumbnail} />
+            <Text style={styles.cardTitle}>{plan.title}</Text>
+            <Text style={styles.cardMeta}>
+              {plan.destination_region} · {plan.duration_nights}박 · {plan.party_size}명 · 장소{' '}
+              {plan.place_count}개 · 조회 {plan.view_count}
+            </Text>
+            <Text style={styles.badge}>✈️ 실제 다녀온 플랜 · 💎 {plan.credit_price}</Text>
+          </TouchableOpacity>
+        </Link>
+      ))}
       <Link href={'/community/market/register' as Href} asChild>
         <TouchableOpacity style={styles.fab}>
           <Text style={styles.fabText}>내 플랜 등록하기</Text>
         </TouchableOpacity>
       </Link>
-    </ScrollView>
+    </RefreshableScrollView>
   );
 }
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: { backgroundColor: theme.semantic.background, gap: 16, padding: 20, paddingTop: 32 },
+    scroll: { backgroundColor: theme.semantic.background, flex: 1 },
     header: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
     title: { color: theme.semantic.text, fontSize: 28, fontWeight: '800' },
     credit: {

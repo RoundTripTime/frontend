@@ -30,3 +30,9 @@ export type RefreshTokenRequest = {
 export type RefreshTokenResponse = {
   access_token: string;
 };
+
+export type TestTokenRequest = {
+  secret: string;
+};
+
+export type TestTokenResponse = SocialLoginResponse;

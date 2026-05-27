@@ -1,14 +1,25 @@
 import { Link, type Href } from 'expo-router';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { useCommunityPostsQuery } from '@/src/api/community/hooks';
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { FeedSkeleton } from '@/src/components/LoadingSkeleton';
+import { RefreshableScrollView } from '@/src/components/RefreshableScrollView';
+import { useMinimumLoading } from '@/src/hooks/useMinimumLoading';
 import { useAppTheme, type AppTheme } from '@/src/theme';
 
 export default function CommunityScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
+  const postsQuery = useCommunityPostsQuery();
+  const isInitialLoading = useMinimumLoading(postsQuery.isPending && !postsQuery.data);
+  const posts = postsQuery.data?.items ?? [];
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <RefreshableScrollView
+      contentContainerStyle={styles.container}
+      style={styles.scroll}
+      onRefresh={() => postsQuery.refetch()}
+    >
       <DevScreenHeader screenName="커뮤니티" screenNumber="S-11" />
       {/*
         화면: 커뮤니티 (S-11)
@@ -16,7 +27,11 @@ export default function CommunityScreen() {
         가능한 다음 이동 화면: S-11A, S-11M, S-05, S-09
       */}
       <Text style={styles.title}>커뮤니티</Text>
-      <View style={styles.chips}>
+      <ScrollView
+        horizontal
+        contentContainerStyle={styles.chips}
+        showsHorizontalScrollIndicator={false}
+      >
         {['전체', '팔로잉', '플랜 마켓'].map((label, index) =>
           label === '플랜 마켓' ? (
             <Link key={label} href={'/community/market' as Href} asChild>
@@ -30,30 +45,44 @@ export default function CommunityScreen() {
             </Text>
           ),
         )}
-      </View>
-      <Link href={'/community/posts/sample-post' as Href} asChild>
-        <TouchableOpacity style={styles.card}>
-          <View style={styles.avatar} />
-          <Text style={styles.author}>여행자 민</Text>
-          <Text style={styles.body}>도쿄 3박 4일 동선이 좋아서 공유합니다.</Text>
-          <View style={styles.tagCard}>
-            <Text style={styles.tagTitle}>태그된 플랜 · 도쿄 여름 여행</Text>
-          </View>
-          <Text style={styles.meta}>좋아요 24 · 댓글 6</Text>
-        </TouchableOpacity>
-      </Link>
+      </ScrollView>
+      {isInitialLoading ? (
+        <FeedSkeleton />
+      ) : (
+        posts.map((post) => (
+          <Link key={post.post_id} href={`/community/posts/${post.post_id}` as Href} asChild>
+            <TouchableOpacity style={styles.card}>
+              <View style={styles.avatar} />
+              <Text style={styles.author}>{post.author.nickname}</Text>
+              <Text style={styles.body}>{post.content}</Text>
+              {post.tagged_itinerary ? (
+                <View style={styles.tagCard}>
+                  <Text style={styles.tagTitle}>태그된 플랜 · {post.tagged_itinerary.title}</Text>
+                </View>
+              ) : null}
+              <Text style={styles.meta}>
+                좋아요 {post.like_count} · 댓글 {post.comment_count}
+              </Text>
+            </TouchableOpacity>
+          </Link>
+        ))
+      )}
+      {!isInitialLoading && posts.length === 0 ? (
+        <Text style={styles.meta}>아직 커뮤니티 글이 없습니다.</Text>
+      ) : null}
       <TouchableOpacity style={styles.fab}>
         <Text style={styles.fabText}>글쓰기</Text>
       </TouchableOpacity>
-    </ScrollView>
+    </RefreshableScrollView>
   );
 }
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: { backgroundColor: theme.semantic.background, gap: 16, padding: 20, paddingTop: 64 },
-    title: { color: theme.semantic.text, fontSize: 30, fontWeight: '800' },
-    chips: { flexDirection: 'row', gap: 8 },
+    scroll: { backgroundColor: theme.semantic.background, flex: 1 },
+    title: { color: theme.semantic.text, fontSize: 34, fontWeight: '900' },
+    chips: { flexDirection: 'row', gap: 8, paddingRight: 20 },
     chip: {
       backgroundColor: theme.semantic.surfaceMuted,
       borderRadius: 18,

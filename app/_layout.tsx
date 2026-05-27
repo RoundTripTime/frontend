@@ -1,13 +1,16 @@
 import { DefaultTheme, ThemeProvider, type Theme } from '@react-navigation/native';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { ErrorBoundary } from '@/src/components/ErrorBoundary';
 import { installGlobalHandlers } from '@/src/lib/globalHandlers';
+import { queryClient } from '@/src/lib/queryClient';
 import { installAuthInterceptors, useAuthStore } from '@/src/stores/auth';
 import { appThemes } from '@/src/theme';
 
@@ -40,10 +43,14 @@ export default function RootLayout() {
 
   return (
     <ErrorBoundary>
-      <ThemeProvider value={navigationTheme}>
-        <AuthGate />
-        <StatusBar style={appTheme.colorScheme === 'dark' ? 'dark' : 'auto'} />
-      </ThemeProvider>
+      <GestureHandlerRootView style={styles.root}>
+        <ThemeProvider value={navigationTheme}>
+          <QueryClientProvider client={queryClient}>
+            <AuthGate />
+            <StatusBar style={appTheme.colorScheme === 'dark' ? 'dark' : 'auto'} />
+          </QueryClientProvider>
+        </ThemeProvider>
+      </GestureHandlerRootView>
     </ErrorBoundary>
   );
 }
@@ -100,7 +107,10 @@ function AuthGate() {
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '' }} />
         <Stack.Screen name="(auth)/onboarding/index" options={{ title: '온보딩' }} />
-        <Stack.Screen name="(share)/receive/index" options={{ title: '링크 수신' }} />
+        <Stack.Screen
+          name="(share)/receive/index"
+          options={{ headerShown: false, title: '링크 수신' }}
+        />
         <Stack.Screen name="places/recent/index" options={{ title: '최근 추가한 장소' }} />
         <Stack.Screen name="places/[placeId]/index" options={{ title: '장소 상세' }} />
         <Stack.Screen name="plans/new/index" options={{ title: '새 플랜 만들기' }} />
@@ -124,6 +134,7 @@ function AuthGate() {
 }
 
 const styles = StyleSheet.create({
+  root: { flex: 1 },
   loading: {
     alignItems: 'center',
     flex: 1,

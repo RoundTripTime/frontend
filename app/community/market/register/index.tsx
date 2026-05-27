@@ -1,13 +1,21 @@
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { useItinerariesQuery } from '@/src/api/itineraries/hooks';
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { RefreshableScrollView } from '@/src/components/RefreshableScrollView';
 import { useAppTheme, type AppTheme } from '@/src/theme';
 
 export default function MarketRegisterScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
+  const plansQuery = useItinerariesQuery();
+  const plan = plansQuery.data?.items[0];
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <RefreshableScrollView
+      contentContainerStyle={styles.container}
+      style={styles.scroll}
+      onRefresh={() => plansQuery.refetch()}
+    >
       <DevScreenHeader screenName="플랜 마켓 등록" screenNumber="S-11MR" />
       {/*
         화면: 플랜 마켓 등록 (S-11MR)
@@ -16,7 +24,7 @@ export default function MarketRegisterScreen() {
       */}
       <Text style={styles.title}>마켓 등록</Text>
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>도쿄 여름 여행</Text>
+        <Text style={styles.cardTitle}>{plan?.title ?? '등록 가능한 플랜을 불러오는 중'}</Text>
         <Text style={styles.badge}>✈️ OTA 예약 완료</Text>
       </View>
       {['제목', '한 줄 소개', '소개', '좋았던 점', '아쉬웠던 점', '추가 팁'].map((field) => (
@@ -28,13 +36,14 @@ export default function MarketRegisterScreen() {
       <TouchableOpacity style={styles.primaryButton}>
         <Text style={styles.primaryButtonText}>등록 완료</Text>
       </TouchableOpacity>
-    </ScrollView>
+    </RefreshableScrollView>
   );
 }
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: { backgroundColor: theme.semantic.background, gap: 14, padding: 20, paddingTop: 32 },
+    scroll: { backgroundColor: theme.semantic.background, flex: 1 },
     title: { color: theme.semantic.text, fontSize: 28, fontWeight: '800' },
     card: { backgroundColor: theme.semantic.surface, borderRadius: 8, gap: 8, padding: 14 },
     cardTitle: { color: theme.semantic.text, fontWeight: '800' },

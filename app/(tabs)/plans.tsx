@@ -1,18 +1,103 @@
-import { Link, type Href } from 'expo-router';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useQueryClient } from '@tanstack/react-query';
+import * as Clipboard from 'expo-clipboard';
+import { Link, useRouter, type Href } from 'expo-router';
+import { useRef, useState } from 'react';
+import {
+  Alert,
+  LayoutChangeEvent,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
+import {
+  itineraryKeys,
+  useDeleteItineraryMutation,
+  useItinerariesQuery,
+  useItineraryShareMutation,
+} from '@/src/api/itineraries/hooks';
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
-import { createPlanListItemViewModel } from '@/src/features/plans/viewModel';
-import { mockItineraries } from '@/src/mocks/fixtures';
+import { PlanListSkeleton } from '@/src/components/LoadingSkeleton';
+import { RefreshableScrollView } from '@/src/components/RefreshableScrollView';
+import {
+  createPlanListItemViewModel,
+  type PlanListItemViewModel,
+} from '@/src/features/plans/viewModel';
+import { useMinimumLoading } from '@/src/hooks/useMinimumLoading';
 import { useAppTheme, type AppTheme } from '@/src/theme';
+
+const ACTION_WIDTH = 92;
+const ACTION_THRESHOLD = 54;
+const LEFT_ACTION_WIDTH_RATIO = 0.5;
+const LEFT_RESISTANCE_DISTANCE_RATIO = 0.22;
+const DELETE_TRIGGER_RATIO = 0.65;
+const DELETE_TRIGGER_MIN_OFFSET = 220;
+const DELETE_FLING_RATIO = 0.38;
+const DELETE_FLING_VELOCITY = 1200;
+const SNAP_DURATION_MS = 140;
+const DELETE_COLLAPSE_DURATION_MS = 180;
+
+function toResistedLeftOffset(fingerOffset: number, maxOffset: number) {
+  'worklet';
+
+  if (fingerOffset >= 0 || maxOffset <= 0) {
+    return fingerOffset;
+  }
+
+  const distance = Math.abs(fingerOffset);
+  const resistanceDistance = maxOffset * LEFT_RESISTANCE_DISTANCE_RATIO;
+  const mappedDistance = (maxOffset * distance) / (distance + resistanceDistance);
+
+  return -mappedDistance;
+}
 
 export default function PlansScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
-  const plans = mockItineraries.map(createPlanListItemViewModel);
+  const queryClient = useQueryClient();
+  const plansQuery = useItinerariesQuery();
+  const deleteItineraryMutation = useDeleteItineraryMutation();
+  const itineraryShareMutation = useItineraryShareMutation();
+  const isInitialLoading = useMinimumLoading(plansQuery.isPending && !plansQuery.data);
+  const plans = (plansQuery.data?.items ?? []).map(createPlanListItemViewModel);
+
+  const handleSharePlan = async (plan: PlanListItemViewModel) => {
+    try {
+      const share = await itineraryShareMutation.mutateAsync(plan.id);
+      await Clipboard.setStringAsync(share.share_url);
+      Alert.alert('공유 링크 복사', '플랜 공유 링크를 복사했어요.');
+    } catch {
+      Alert.alert('공유 실패', '공유 링크를 만들지 못했어요.');
+    }
+  };
+
+  const handleDeletePlan = async (plan: PlanListItemViewModel) => {
+    try {
+      await deleteItineraryMutation.mutateAsync(plan.id);
+      await queryClient.invalidateQueries({ queryKey: itineraryKeys.lists });
+    } catch (error) {
+      Alert.alert('삭제 실패', '플랜을 삭제하지 못했어요.');
+      throw error;
+    }
+  };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <RefreshableScrollView
+      contentContainerStyle={styles.container}
+      style={styles.scroll}
+      onRefresh={() => plansQuery.refetch()}
+    >
       <DevScreenHeader screenName="플랜 목록" screenNumber="S-06" />
       {/*
         화면: 플랜 목록 (S-06)
@@ -22,45 +107,325 @@ export default function PlansScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>내 플랜</Text>
       </View>
-      {plans.map((plan) => (
-        <Link key={plan.id} href={`/plans/${plan.id}` as Href} asChild>
-          <TouchableOpacity style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>{plan.title}</Text>
-              <Text style={styles.badge}>{plan.visibilityLabel}</Text>
-            </View>
-            <Text style={styles.cardMeta}>{plan.meta}</Text>
-            <Text style={styles.status}>{plan.statusLabel}</Text>
-          </TouchableOpacity>
-        </Link>
-      ))}
+      {isInitialLoading ? (
+        <PlanListSkeleton />
+      ) : (
+        plans.map((plan) => (
+          <SwipePlanCard
+            key={plan.id}
+            plan={plan}
+            styles={styles}
+            theme={theme}
+            onDelete={handleDeletePlan}
+            onShare={handleSharePlan}
+          />
+        ))
+      )}
+      {!isInitialLoading && plans.length === 0 ? (
+        <Text style={styles.cardMeta}>아직 만든 플랜이 없습니다.</Text>
+      ) : null}
       <Link href={'/plans/new' as Href} asChild>
         <TouchableOpacity style={styles.primaryButton}>
           <Text style={styles.primaryButtonText}>+ 새 플랜 만들기</Text>
         </TouchableOpacity>
       </Link>
-    </ScrollView>
+    </RefreshableScrollView>
+  );
+}
+
+type SwipePlanCardProps = {
+  plan: PlanListItemViewModel;
+  styles: ReturnType<typeof createStyles>;
+  theme: AppTheme;
+  onDelete: (plan: PlanListItemViewModel) => Promise<void>;
+  onShare: (plan: PlanListItemViewModel) => Promise<void>;
+};
+
+function SwipePlanCard({ plan, styles, theme, onDelete, onShare }: SwipePlanCardProps) {
+  const router = useRouter();
+  const { width } = useWindowDimensions();
+  const [isDeleted, setIsDeleted] = useState(false);
+  const didSwipeRef = useRef(false);
+  const isOpenRef = useRef(false);
+  const translateX = useSharedValue(0);
+  const deleteActionX = useSharedValue(0);
+  const startX = useSharedValue(0);
+  const measuredHeight = useSharedValue(0);
+  const collapsedHeight = useSharedValue(-1);
+  const cardWidth = useSharedValue(0);
+
+  const close = () => {
+    isOpenRef.current = false;
+    translateX.value = withTiming(0, { duration: SNAP_DURATION_MS });
+  };
+
+  const markSwipeGesture = () => {
+    didSwipeRef.current = true;
+  };
+
+  const markOpen = (isOpen: boolean) => {
+    isOpenRef.current = isOpen;
+  };
+
+  const restoreAfterDeleteFailure = () => {
+    isOpenRef.current = false;
+    deleteActionX.value = withTiming(0, { duration: SNAP_DURATION_MS });
+    translateX.value = withTiming(0, { duration: SNAP_DURATION_MS });
+    collapsedHeight.value = withTiming(
+      measuredHeight.value,
+      { duration: DELETE_COLLAPSE_DURATION_MS },
+      () => {
+        collapsedHeight.value = -1;
+      },
+    );
+  };
+
+  const completeDelete = () => {
+    void onDelete(plan)
+      .then(() => setIsDeleted(true))
+      .catch(restoreAfterDeleteFailure);
+  };
+
+  const collapseAfterSwipeOut = () => {
+    collapsedHeight.value = measuredHeight.value;
+    collapsedHeight.value = withTiming(0, { duration: DELETE_COLLAPSE_DURATION_MS }, () => {
+      runOnJS(completeDelete)();
+    });
+  };
+
+  const handleLayout = (event: LayoutChangeEvent) => {
+    const nextHeight = event.nativeEvent.layout.height;
+
+    if (nextHeight > 0) {
+      measuredHeight.value = nextHeight;
+    }
+
+    cardWidth.value = event.nativeEvent.layout.width;
+  };
+
+  const handleShare = () => {
+    void onShare(plan);
+    close();
+  };
+
+  const handleDelete = () => {
+    deleteActionX.value = withTiming(-width, { duration: SNAP_DURATION_MS });
+    translateX.value = withTiming(-width, { duration: SNAP_DURATION_MS }, () => {
+      runOnJS(collapseAfterSwipeOut)();
+    });
+  };
+
+  const handlePressCard = () => {
+    if (didSwipeRef.current) {
+      didSwipeRef.current = false;
+      if (isOpenRef.current) {
+        close();
+      }
+      return;
+    }
+
+    if (isOpenRef.current) {
+      close();
+      return;
+    }
+
+    router.push(`/plans/${plan.id}` as Href);
+  };
+
+  const panGesture = Gesture.Pan()
+    .activeOffsetX([-12, 12])
+    .failOffsetY([-14, 14])
+    .onBegin(() => {
+      startX.value = translateX.value;
+    })
+    .onUpdate((event) => {
+      const fingerOffset = startX.value + event.translationX;
+      const maxLeftOffset = cardWidth.value * LEFT_ACTION_WIDTH_RATIO;
+      translateX.value = toResistedLeftOffset(fingerOffset, maxLeftOffset);
+
+      if (Math.abs(event.translationX) > 8) {
+        runOnJS(markSwipeGesture)();
+      }
+    })
+    .onEnd((event) => {
+      const deleteOffset = Math.max(
+        cardWidth.value * DELETE_TRIGGER_RATIO,
+        DELETE_TRIGGER_MIN_OFFSET,
+      );
+      const flingOffset = cardWidth.value * DELETE_FLING_RATIO;
+      const shouldDelete =
+        -event.translationX >= deleteOffset ||
+        (-event.translationX >= flingOffset && event.velocityX < -DELETE_FLING_VELOCITY);
+
+      if (shouldDelete) {
+        deleteActionX.value = withTiming(-width, { duration: SNAP_DURATION_MS });
+        translateX.value = withTiming(-width, { duration: SNAP_DURATION_MS }, () => {
+          runOnJS(collapseAfterSwipeOut)();
+        });
+        return;
+      }
+
+      if (translateX.value > ACTION_THRESHOLD) {
+        translateX.value = withTiming(ACTION_WIDTH, { duration: SNAP_DURATION_MS }, () => {
+          runOnJS(markOpen)(true);
+        });
+        return;
+      }
+
+      translateX.value = withTiming(0, { duration: SNAP_DURATION_MS }, () => {
+        runOnJS(markOpen)(false);
+      });
+    });
+
+  const cardStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+
+  const leftActionStyle = useAnimatedStyle(() => ({
+    opacity: Math.min(1, Math.max(0, translateX.value / ACTION_WIDTH)),
+  }));
+
+  const rightActionStyle = useAnimatedStyle(() => ({
+    opacity: Math.min(
+      1,
+      Math.max(0, -translateX.value / Math.max(1, cardWidth.value * LEFT_ACTION_WIDTH_RATIO)),
+    ),
+    transform: [{ translateX: deleteActionX.value }],
+  }));
+
+  const hostStyle = useAnimatedStyle(() => {
+    if (collapsedHeight.value < 0) {
+      return {};
+    }
+
+    return {
+      height: collapsedHeight.value,
+      opacity: collapsedHeight.value <= 0 ? 0 : 1,
+    };
+  });
+
+  if (isDeleted) {
+    return null;
+  }
+
+  return (
+    <Animated.View style={[styles.swipeHost, hostStyle]} onLayout={handleLayout}>
+      <Animated.View style={[styles.actionPane, styles.shareAction, leftActionStyle]}>
+        <Pressable style={styles.actionButton} onPress={handleShare}>
+          <Ionicons color={theme.semantic.onPrimary} name="share-outline" size={21} />
+          <Text style={styles.actionText}>공유</Text>
+        </Pressable>
+      </Animated.View>
+      <Animated.View style={[styles.actionPane, styles.deleteAction, rightActionStyle]}>
+        <Pressable style={styles.actionButton} onPress={handleDelete}>
+          <Ionicons color={theme.semantic.onPrimary} name="trash-outline" size={21} />
+          <Text style={styles.actionText}>삭제</Text>
+        </Pressable>
+      </Animated.View>
+      <GestureDetector gesture={panGesture}>
+        <Animated.View style={cardStyle}>
+          <Pressable style={styles.card} onPress={handlePressCard}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>{plan.title}</Text>
+              {plan.isPrivate ? (
+                <View style={styles.lockBadge}>
+                  <Ionicons
+                    color={theme.semantic.textSecondary}
+                    name="lock-closed-outline"
+                    size={16}
+                  />
+                </View>
+              ) : null}
+            </View>
+            <View style={styles.infoList}>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>장소</Text>
+                <Text style={styles.infoValue}>
+                  {plan.destinationLabel} · {plan.placeCountLabel}
+                </Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>기간</Text>
+                <Text style={styles.infoValue}>{plan.dateRangeLabel}</Text>
+              </View>
+              <View style={[styles.infoRow, styles.lastInfoRow]}>
+                <Text style={styles.infoLabel}>인원</Text>
+                <Text style={styles.infoValue}>{plan.partyLabel}</Text>
+              </View>
+            </View>
+          </Pressable>
+        </Animated.View>
+      </GestureDetector>
+    </Animated.View>
   );
 }
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: { backgroundColor: theme.semantic.background, gap: 16, padding: 20, paddingTop: 64 },
+    scroll: { backgroundColor: theme.semantic.background, flex: 1 },
     header: { gap: 12 },
-    title: { color: theme.semantic.text, fontSize: 30, fontWeight: '800' },
+    title: { color: theme.semantic.text, fontSize: 34, fontWeight: '900' },
     primaryButton: { backgroundColor: theme.semantic.primary, borderRadius: 8, padding: 14 },
     primaryButtonText: { color: theme.semantic.onPrimary, fontWeight: '800', textAlign: 'center' },
-    card: { backgroundColor: theme.semantic.surface, borderRadius: 8, gap: 8, padding: 16 },
-    cardHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
-    cardTitle: { color: theme.semantic.text, fontSize: 18, fontWeight: '800' },
-    badge: {
+    card: {
+      backgroundColor: theme.semantic.surface,
+      borderColor: theme.semantic.border,
+      borderRadius: 10,
+      borderWidth: 1,
+      gap: 16,
+      padding: 18,
+    },
+    cardHeader: { alignItems: 'flex-start', flexDirection: 'row', gap: 12 },
+    cardTitle: { color: theme.semantic.text, flex: 1, fontSize: 22, fontWeight: '900' },
+    lockBadge: {
+      alignItems: 'center',
       backgroundColor: theme.semantic.surfaceMuted,
-      borderRadius: 14,
-      color: theme.semantic.textSecondary,
-      overflow: 'hidden',
-      paddingHorizontal: 10,
-      paddingVertical: 5,
+      borderRadius: 16,
+      height: 32,
+      justifyContent: 'center',
+      width: 32,
     },
     cardMeta: { color: theme.semantic.textMuted },
-    status: { color: theme.semantic.primary, fontWeight: '700' },
+    swipeHost: { borderRadius: 10, overflow: 'hidden' },
+    actionPane: {
+      bottom: 0,
+      position: 'absolute',
+      top: 0,
+    },
+    shareAction: {
+      backgroundColor: theme.semantic.primary,
+      left: 0,
+      width: ACTION_WIDTH,
+    },
+    deleteAction: {
+      backgroundColor: theme.semantic.danger,
+      right: 0,
+      width: '50%',
+    },
+    actionButton: {
+      alignItems: 'center',
+      flex: 1,
+      gap: 6,
+      justifyContent: 'center',
+    },
+    actionText: { color: theme.semantic.onPrimary, fontSize: 13, fontWeight: '900' },
+    infoList: {
+      borderColor: theme.semantic.border,
+      borderRadius: 8,
+      borderWidth: 1,
+      overflow: 'hidden',
+    },
+    infoRow: {
+      alignItems: 'center',
+      borderBottomColor: theme.semantic.border,
+      borderBottomWidth: 1,
+      flexDirection: 'row',
+      gap: 12,
+      paddingHorizontal: 12,
+      paddingVertical: 11,
+    },
+    lastInfoRow: { borderBottomWidth: 0 },
+    infoLabel: { color: theme.semantic.textMuted, fontSize: 13, fontWeight: '800', width: 42 },
+    infoValue: { color: theme.semantic.textSecondary, flex: 1, fontSize: 14, fontWeight: '700' },
   });

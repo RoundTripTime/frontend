@@ -1,9 +1,10 @@
 import { Link, type Href } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
+import { useCollectionPlacesQuery, useCollectionsQuery } from '@/src/api/collections/hooks';
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
-import { mockPlaces } from '@/src/mocks/fixtures';
+import { RefreshableScrollView } from '@/src/components/RefreshableScrollView';
 import { useAppTheme, type AppTheme } from '@/src/theme';
 
 type SavedPlace = {
@@ -14,12 +15,6 @@ type SavedPlace = {
 };
 
 const quickDestinations = ['일본', '한국', '태국', '베트남', '기타'];
-const savedPlaces: SavedPlace[] = mockPlaces.map((place) => ({
-  id: place.place_id,
-  name: place.canonical_name,
-  category: place.category,
-  country: place.country_code,
-}));
 
 export default function NewPlanScreen() {
   const theme = useAppTheme();
@@ -31,6 +26,22 @@ export default function NewPlanScreen() {
   const [endDate, setEndDate] = useState('');
   const [partySize, setPartySize] = useState(1);
   const [selectedPlaceIds, setSelectedPlaceIds] = useState<string[]>([]);
+  const collectionsQuery = useCollectionsQuery();
+  const defaultCollectionId =
+    collectionsQuery.data?.items.find((collection) => collection.is_default)?.collection_id ??
+    collectionsQuery.data?.items[0]?.collection_id ??
+    '';
+  const collectionPlacesQuery = useCollectionPlacesQuery(defaultCollectionId);
+  const savedPlaces: SavedPlace[] = useMemo(
+    () =>
+      (collectionPlacesQuery.data?.places ?? []).map((place) => ({
+        id: place.place_id,
+        name: place.canonical_name,
+        category: place.category,
+        country: place.country_code,
+      })),
+    [collectionPlacesQuery.data?.places],
+  );
 
   const canGoNext =
     title.trim().length > 0 && destination.trim().length > 0 && startDate && endDate;
@@ -49,7 +60,11 @@ export default function NewPlanScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <RefreshableScrollView
+      contentContainerStyle={styles.container}
+      style={styles.scroll}
+      onRefresh={() => Promise.all([collectionsQuery.refetch(), collectionPlacesQuery.refetch()])}
+    >
       <DevScreenHeader screenName="새 플랜 만들기" screenNumber="S-06N" />
       {/*
         화면: 새 플랜 만들기 (S-06N)
@@ -188,13 +203,14 @@ export default function NewPlanScreen() {
           </Link>
         </>
       )}
-    </ScrollView>
+    </RefreshableScrollView>
   );
 }
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: { backgroundColor: theme.semantic.background, gap: 14, padding: 20, paddingTop: 32 },
+    scroll: { backgroundColor: theme.semantic.background, flex: 1 },
     step: { color: theme.semantic.primary, fontSize: 18, fontWeight: '900' },
     stepHeader: { gap: 8 },
     title: { color: theme.semantic.text, fontSize: 24, fontWeight: '800' },

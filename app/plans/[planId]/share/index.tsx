@@ -1,58 +1,73 @@
 import { Link, useLocalSearchParams, type Href } from 'expo-router';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { useItineraryQuery } from '@/src/api/itineraries/hooks';
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { RefreshableScrollView } from '@/src/components/RefreshableScrollView';
 import { createPlanDetailViewModel } from '@/src/features/plans/viewModel';
-import { mockItineraryDetail } from '@/src/mocks/fixtures';
 import { useAppTheme, type AppTheme } from '@/src/theme';
 
 export default function PlanShareScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
   const { planId } = useLocalSearchParams<{ planId: string }>();
-  const currentPlanId = planId ?? mockItineraryDetail.itinerary_id;
-  const plan = createPlanDetailViewModel({ ...mockItineraryDetail, itinerary_id: currentPlanId });
+  const currentPlanId = planId ?? '';
+  const planQuery = useItineraryQuery(currentPlanId);
+  const plan = planQuery.data ? createPlanDetailViewModel(planQuery.data) : null;
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <RefreshableScrollView
+      contentContainerStyle={styles.container}
+      style={styles.scroll}
+      onRefresh={() => planQuery.refetch()}
+    >
       <DevScreenHeader screenName="플랜 공유 / 상세" screenNumber="S-09" />
       {/*
         화면: 플랜 공유 / 상세 (S-09)
         기능: 완성된 플랜 요약, 읽기 전용 일정, 지도 전체 보기, 공유와 편집 액션을 제공한다.
         가능한 다음 이동 화면: S-07
       */}
-      <Text style={styles.title}>{plan.title}</Text>
-      <Text style={styles.meta}>
-        {plan.dateRangeLabel} · {plan.partyLabel} · 장소 {plan.placeCount}개
-      </Text>
-      <View style={styles.map}>
-        <Text style={styles.mapText}>지도 전체 보기</Text>
-      </View>
-      {plan.days.map((day) => (
-        <View key={day.dayIndex} style={styles.section}>
-          <Text style={styles.sectionTitle}>{day.title}</Text>
-          {day.items.map((item) => (
-            <Text key={item.itemId} style={styles.place}>
-              {item.name}
-            </Text>
+      {planQuery.isLoading ? <Text style={styles.place}>플랜을 불러오는 중입니다.</Text> : null}
+      {!planQuery.isLoading && !plan ? (
+        <Text style={styles.place}>플랜 정보를 불러오지 못했습니다.</Text>
+      ) : null}
+      {plan ? (
+        <>
+          <Text style={styles.title}>{plan.title}</Text>
+          <Text style={styles.meta}>
+            {plan.dateRangeLabel} · {plan.partyLabel} · 장소 {plan.placeCount}개
+          </Text>
+          <View style={styles.map}>
+            <Text style={styles.mapText}>지도 전체 보기</Text>
+          </View>
+          {plan.days.map((day) => (
+            <View key={day.dayIndex} style={styles.section}>
+              <Text style={styles.sectionTitle}>{day.title}</Text>
+              {day.items.map((item) => (
+                <Text key={item.itemId} style={styles.place}>
+                  {item.name}
+                </Text>
+              ))}
+            </View>
           ))}
-        </View>
-      ))}
-      <TouchableOpacity style={styles.primaryButton}>
-        <Text style={styles.primaryButtonText}>공유</Text>
-      </TouchableOpacity>
-      <Link href={`/plans/${plan.id}` as Href} asChild>
-        <TouchableOpacity style={styles.secondaryButton}>
-          <Text style={styles.secondaryButtonText}>편집</Text>
-        </TouchableOpacity>
-      </Link>
-    </ScrollView>
+          <TouchableOpacity style={styles.primaryButton}>
+            <Text style={styles.primaryButtonText}>공유</Text>
+          </TouchableOpacity>
+          <Link href={`/plans/${plan.id}` as Href} asChild>
+            <TouchableOpacity style={styles.secondaryButton}>
+              <Text style={styles.secondaryButtonText}>편집</Text>
+            </TouchableOpacity>
+          </Link>
+        </>
+      ) : null}
+    </RefreshableScrollView>
   );
 }
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: { backgroundColor: theme.semantic.background, gap: 14, padding: 20, paddingTop: 32 },
+    scroll: { backgroundColor: theme.semantic.background, flex: 1 },
     title: { color: theme.semantic.text, fontSize: 28, fontWeight: '800' },
     meta: { color: theme.semantic.textMuted },
     map: {

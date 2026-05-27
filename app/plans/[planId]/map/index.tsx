@@ -1,20 +1,26 @@
 import { Link, useLocalSearchParams, type Href } from 'expo-router';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { useItineraryQuery } from '@/src/api/itineraries/hooks';
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { RefreshableScrollView } from '@/src/components/RefreshableScrollView';
 import { createPlanMapViewModel } from '@/src/features/plans/viewModel';
-import { mockItineraryDetail } from '@/src/mocks/fixtures';
 import { useAppTheme, type AppTheme } from '@/src/theme';
 
 export default function PlanMapScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
   const { planId } = useLocalSearchParams<{ planId: string }>();
-  const currentPlanId = planId ?? mockItineraryDetail.itinerary_id;
-  const planMap = createPlanMapViewModel({ ...mockItineraryDetail, itinerary_id: currentPlanId });
+  const currentPlanId = planId ?? '';
+  const planQuery = useItineraryQuery(currentPlanId);
+  const planMap = planQuery.data ? createPlanMapViewModel(planQuery.data) : null;
 
   return (
-    <View style={styles.container}>
+    <RefreshableScrollView
+      contentContainerStyle={styles.container}
+      style={styles.screen}
+      onRefresh={() => planQuery.refetch()}
+    >
       <DevScreenHeader screenName="플랜 지도 스플릿 뷰" screenNumber="S-07-M" />
       {/*
         화면: 플랜 지도 스플릿 뷰 (S-07-M)
@@ -23,9 +29,11 @@ export default function PlanMapScreen() {
       */}
       <View style={styles.map}>
         <Text style={styles.mapText}>플랜 지도</Text>
-        <Text style={styles.mapMeta}>마커 {planMap.markers.length}개</Text>
+        <Text style={styles.mapMeta}>
+          {planQuery.isLoading ? '불러오는 중' : `마커 ${planMap?.markers.length ?? 0}개`}
+        </Text>
         <View style={styles.markerLayer}>
-          {planMap.markers.map((marker) => (
+          {planMap?.markers.map((marker) => (
             <Link key={marker.itemId} href={`/places/${marker.placeId}` as Href} asChild>
               <TouchableOpacity
                 style={[
@@ -39,26 +47,29 @@ export default function PlanMapScreen() {
           ))}
         </View>
       </View>
-      <Link href={`/plans/${planMap.id}` as Href} asChild>
-        <TouchableOpacity style={styles.close}>
-          <Text style={styles.closeText}>X</Text>
-        </TouchableOpacity>
-      </Link>
+      {planMap ? (
+        <Link href={`/plans/${planMap.id}` as Href} asChild>
+          <TouchableOpacity style={styles.close}>
+            <Text style={styles.closeText}>X</Text>
+          </TouchableOpacity>
+        </Link>
+      ) : null}
       <View style={styles.sheet}>
         <Text style={styles.sheetTitle}>Day별 장소</Text>
-        {planMap.allItems.map((item) => (
+        {planMap?.allItems.map((item) => (
           <Text key={item.itemId} style={styles.chip}>
             {item.dayLabel} · {item.name}
           </Text>
         ))}
       </View>
-    </View>
+    </RefreshableScrollView>
   );
 }
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    container: { backgroundColor: theme.semantic.background, flex: 1 },
+    screen: { backgroundColor: theme.semantic.background, flex: 1 },
+    container: { backgroundColor: theme.semantic.background, flexGrow: 1 },
     map: {
       alignItems: 'center',
       backgroundColor: theme.semantic.borderStrong,

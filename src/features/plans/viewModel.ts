@@ -3,9 +3,11 @@ import type { Itinerary, ItineraryItem, ItineraryListItem } from '@/src/api/itin
 export type PlanListItemViewModel = {
   id: string;
   title: string;
-  meta: string;
-  statusLabel: string;
-  visibilityLabel: string;
+  destinationLabel: string;
+  dateRangeLabel: string;
+  partyLabel: string;
+  placeCountLabel: string;
+  isPrivate: boolean;
 };
 
 export type PlanPlaceViewModel = {
@@ -47,17 +49,6 @@ export type PlanMapViewModel = Pick<
   markers: PlanPlaceViewModel[];
 };
 
-const visibilityLabels: Record<string, string> = {
-  private: '비공개',
-  public: '공개',
-};
-
-const statusLabels: Record<string, string> = {
-  completed: '완료',
-  confirmed: '확정',
-  draft: '초안',
-};
-
 function formatDateRange(startDate: string, endDate: string) {
   return `${startDate.replaceAll('-', '.')} ~ ${endDate.replaceAll('-', '.')}`;
 }
@@ -92,13 +83,13 @@ function toPlanPlaceViewModel(item: ItineraryItem): PlanPlaceViewModel {
 
 export function createPlanListItemViewModel(plan: ItineraryListItem): PlanListItemViewModel {
   return {
+    dateRangeLabel: formatDateRange(plan.start_date, plan.end_date),
+    destinationLabel: plan.destination_region,
     id: plan.itinerary_id,
+    isPrivate: plan.visibility === 'private',
+    partyLabel: `${plan.party_size}명`,
+    placeCountLabel: `장소 ${plan.place_count}개`,
     title: plan.title,
-    meta: `${plan.destination_region} · ${formatDateRange(plan.start_date, plan.end_date)} · ${
-      plan.party_size
-    }명 · 장소 ${plan.place_count}개`,
-    statusLabel: statusLabels[plan.status] ?? plan.status,
-    visibilityLabel: visibilityLabels[plan.visibility] ?? plan.visibility,
   };
 }
 

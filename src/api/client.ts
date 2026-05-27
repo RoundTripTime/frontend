@@ -7,11 +7,12 @@ import {
   type InternalAxiosRequestConfig,
 } from 'axios';
 
+import { attachNetworkLogger } from '@/src/lib/networkLogger';
 import { installApiMockAdapter } from '@/src/mocks';
 
 import { mapApiError } from './errorMap';
 
-export const API_BASE_URL = 'https://api.example.com/v1';
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://api.example.com';
 export const API_TIMEOUT_MS = 10000;
 
 export type TokenProvider = () => string | null | Promise<string | null>;
@@ -44,6 +45,7 @@ export const apiClient = create({
   },
 });
 
+attachNetworkLogger(apiClient);
 installApiMockAdapter(apiClient);
 
 export async function applyAuthHeader(

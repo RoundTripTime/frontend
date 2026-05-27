@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import { refreshToken } from '@/src/api/auth';
+import { issueTestToken, refreshToken } from '@/src/api/auth';
 import { apiClient, attachAuthInterceptor, attachResponseInterceptor } from '@/src/api/client';
 import { deleteMe, getMe } from '@/src/api/users';
 import {
@@ -16,6 +16,7 @@ import {
   getRefreshToken,
   getStoredTokens,
   setAccessToken,
+  setStoredTokens,
 } from '@/src/lib/tokenStore';
 
 import type { AuthUser } from '@/src/api/auth/types';
@@ -35,6 +36,8 @@ type AuthState = {
 
 let interceptorsInstalled = false;
 let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+
+const authTestSecret = process.env.EXPO_PUBLIC_AUTH_TEST_SECRET?.trim();
 
 function clearRefreshTimer() {
   if (refreshTimer) {
@@ -86,6 +89,22 @@ async function refreshAccessTokenSoon() {
   }
 }
 
+async function bootstrapWithTestToken() {
+  if (!authTestSecret) {
+    return null;
+  }
+
+  const result = await issueTestToken({ secret: authTestSecret });
+
+  await setStoredTokens({
+    accessToken: result.access_token,
+    refreshToken: result.refresh_token,
+  });
+  scheduleTokenRefresh(result.access_token);
+
+  return result.user;
+}
+
 export function installAuthInterceptors() {
   if (interceptorsInstalled) {
     return;
@@ -115,6 +134,18 @@ export const useAuthStore = create<AuthState>((set) => ({
     const tokens = await getStoredTokens();
 
     if (!tokens) {
+      try {
+        const testUser = await bootstrapWithTestToken();
+
+        if (testUser) {
+          set({ status: 'authenticated', user: testUser });
+          return;
+        }
+      } catch {
+        await clearStoredTokens();
+        clearRefreshTimer();
+      }
+
       set({ status: 'unauthenticated', user: null });
       return;
     }
@@ -139,6 +170,19 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch {
       await clearStoredTokens();
       clearRefreshTimer();
+
+      try {
+        const testUser = await bootstrapWithTestToken();
+
+        if (testUser) {
+          set({ status: 'authenticated', user: testUser });
+          return;
+        }
+      } catch {
+        await clearStoredTokens();
+        clearRefreshTimer();
+      }
+
       set({ status: 'unauthenticated', user: null });
     }
   },

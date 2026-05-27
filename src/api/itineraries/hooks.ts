@@ -96,6 +96,10 @@ export function useItineraryShareQuery(itineraryId: string) {
   });
 }
 
+export function useItineraryShareMutation() {
+  return useMutation({ mutationFn: getItineraryShare });
+}
+
 export function useOtaLinksQuery(itineraryId: string, params: QueryParams) {
   return useQuery({
     queryKey: itineraryKeys.ota(itineraryId, params),
