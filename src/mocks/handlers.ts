@@ -632,7 +632,15 @@ export const handlers: MockHandler[] = [
   {
     method: 'GET',
     path: '/community/posts',
-    resolve: () => json(page(mockDb.communityPosts)),
+    resolve: ({ params }) => {
+      const feed = params.feed;
+
+      if (feed === 'following') {
+        return json(page([]));
+      }
+
+      return json(page(mockDb.communityPosts));
+    },
   },
   {
     method: 'POST',
@@ -734,7 +742,7 @@ export const handlers: MockHandler[] = [
   {
     method: 'GET',
     path: '/community/posts/:postId/comments',
-    resolve: () => json(page(mockDb.comments)),
+    resolve: ({ params }) => json(page(mockDb.commentsByPostId[params.postId ?? ''] ?? [])),
   },
   {
     method: 'POST',
@@ -752,11 +760,13 @@ export const handlers: MockHandler[] = [
         created_at: new Date().toISOString(),
       };
       const post = mockDb.communityPosts.find((item) => item.post_id === params.postId);
+      const postComments = mockDb.commentsByPostId[params.postId ?? ''] ?? [];
 
-      mockDb.comments.unshift(comment);
+      postComments.unshift(comment);
+      mockDb.commentsByPostId[params.postId ?? ''] = postComments;
 
       if (post) {
-        post.comment_count += 1;
+        post.comment_count = postComments.length;
       }
 
       return json(comment, 201);
@@ -766,9 +776,19 @@ export const handlers: MockHandler[] = [
     method: 'DELETE',
     path: '/community/posts/:postId/comments/:commentId',
     resolve: ({ params }) => {
-      mockDb.comments = mockDb.comments.filter(
+      const postId = params.postId ?? '';
+      const postComments = mockDb.commentsByPostId[postId] ?? [];
+      const nextComments = postComments.filter(
         (comment) => comment.comment_id !== params.commentId,
       );
+      const post = mockDb.communityPosts.find((item) => item.post_id === postId);
+
+      mockDb.commentsByPostId[postId] = nextComments;
+
+      if (post) {
+        post.comment_count = nextComments.length;
+      }
+
       return empty();
     },
   },

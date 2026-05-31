@@ -20,6 +20,7 @@ export type PlanPlaceViewModel = {
   dayIndex: number | null;
   dayLabel: string;
   sortOrder: number | null;
+  plannedDurationMinutes: number | null;
   durationLabel: string;
   markerTone: 'day' | 'unassigned';
 };
@@ -76,6 +77,7 @@ function toPlanPlaceViewModel(item: ItineraryItem): PlanPlaceViewModel {
     dayIndex: item.day_index,
     dayLabel: item.day_index ? `Day ${item.day_index}` : '미배치',
     sortOrder: item.sort_order,
+    plannedDurationMinutes: item.planned_duration_minutes,
     durationLabel: formatDuration(item.planned_duration_minutes),
     markerTone: item.day_index ? 'day' : 'unassigned',
   };

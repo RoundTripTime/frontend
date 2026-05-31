@@ -11,6 +11,11 @@ export function useJobCandidatesQuery(jobId: string) {
     queryKey: candidateKeys.byJob(jobId),
     queryFn: () => listJobCandidates(jobId),
     enabled: !!jobId,
+    refetchInterval: (query) => {
+      const status = query.state.data?.source_link.status;
+
+      return status === 'pending' || status === 'processing' ? 3000 : false;
+    },
   });
 }
 

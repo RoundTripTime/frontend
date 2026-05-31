@@ -20,6 +20,7 @@ import {
 } from '@/src/lib/tokenStore';
 
 import type { AuthUser } from '@/src/api/auth/types';
+import type { UserProfile } from '@/src/api/users/types';
 
 type AuthStatus = 'idle' | 'checking' | 'authenticated' | 'unauthenticated';
 
@@ -32,12 +33,14 @@ type AuthState = {
   logout: () => Promise<void>;
   deleteAccount: () => Promise<void>;
   clearSession: () => Promise<void>;
+  syncUserProfile: (profile: UserProfile) => void;
 };
 
 let interceptorsInstalled = false;
 let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
 const authTestSecret = process.env.EXPO_PUBLIC_AUTH_TEST_SECRET?.trim();
+const clearStoredTokensOnBoot = process.env.EXPO_PUBLIC_CLEAR_STORED_TOKENS_ON_BOOT === 'true';
 
 function clearRefreshTimer() {
   if (refreshTimer) {
@@ -47,10 +50,28 @@ function clearRefreshTimer() {
 }
 
 async function refreshAccessTokenWithStore(refreshTokenValue: string) {
-  const response = await refreshToken({ refresh_token: refreshTokenValue });
-  await setAccessToken(response.access_token);
-  scheduleTokenRefresh(response.access_token);
-  return response.access_token;
+  try {
+    const response = await refreshToken({ refresh_token: refreshTokenValue });
+    await setAccessToken(response.access_token);
+    scheduleTokenRefresh(response.access_token);
+    return response.access_token;
+  } catch (error) {
+    const testUser = await bootstrapWithTestToken();
+
+    if (!testUser) {
+      throw error;
+    }
+
+    useAuthStore.setState({ status: 'authenticated', user: testUser });
+
+    const recoveredAccessToken = await getAccessToken();
+
+    if (!recoveredAccessToken) {
+      throw error;
+    }
+
+    return recoveredAccessToken;
+  }
 }
 
 function scheduleTokenRefresh(accessToken: string) {
@@ -105,6 +126,18 @@ async function bootstrapWithTestToken() {
   return result.user;
 }
 
+function toAuthUser(user: UserProfile): AuthUser {
+  return {
+    id: user.id,
+    nickname: user.nickname,
+    avatar_url: user.avatar_url,
+    email: user.email,
+    locale: user.locale,
+    is_new_user: false,
+    credit_balance: user.credit_balance,
+  };
+}
+
 export function installAuthInterceptors() {
   if (interceptorsInstalled) {
     return;
@@ -130,6 +163,11 @@ export const useAuthStore = create<AuthState>((set) => ({
   bootstrap: async () => {
     installAuthInterceptors();
     set({ status: 'checking', errorMessage: null });
+
+    if (clearStoredTokensOnBoot) {
+      await clearStoredTokens();
+      clearRefreshTimer();
+    }
 
     const tokens = await getStoredTokens();
 
@@ -157,15 +195,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       set({
         status: 'authenticated',
-        user: {
-          id: user.id,
-          nickname: user.nickname,
-          avatar_url: user.avatar_url,
-          email: user.email,
-          locale: user.locale,
-          is_new_user: false,
-          credit_balance: user.credit_balance,
-        },
+        user: toAuthUser(user),
       });
     } catch {
       await clearStoredTokens();
@@ -217,5 +247,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     await clearStoredTokens();
     clearRefreshTimer();
     set({ status: 'unauthenticated', user: null });
+  },
+  syncUserProfile: (profile) => {
+    set({ user: toAuthUser(profile) });
   },
 }));

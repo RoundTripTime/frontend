@@ -42,7 +42,7 @@ export default function MarketRegisterScreen() {
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    container: { backgroundColor: theme.semantic.background, gap: 14, padding: 20, paddingTop: 32 },
+    container: { backgroundColor: theme.semantic.background, gap: 14, padding: 20 },
     scroll: { backgroundColor: theme.semantic.background, flex: 1 },
     title: { color: theme.semantic.text, fontSize: 28, fontWeight: '800' },
     card: { backgroundColor: theme.semantic.surface, borderRadius: 8, gap: 8, padding: 14 },

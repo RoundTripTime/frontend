@@ -67,7 +67,7 @@ export default function MarketListScreen() {
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    container: { backgroundColor: theme.semantic.background, gap: 16, padding: 20, paddingTop: 32 },
+    container: { backgroundColor: theme.semantic.background, gap: 16, padding: 20 },
     scroll: { backgroundColor: theme.semantic.background, flex: 1 },
     header: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
     title: { color: theme.semantic.text, fontSize: 28, fontWeight: '800' },

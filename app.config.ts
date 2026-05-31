@@ -3,16 +3,22 @@ import type { ExpoConfig } from 'expo/config';
 const APP_ENV_MODES = {
   development: {
     appEnv: 'development',
+    androidPackage: 'com.roundtriptime.roundtrip.dev',
+    iosBundleIdentifier: 'com.roundtriptime.roundtrip.dev',
     showDevScreenHeader: true,
     useApiMocks: true,
   },
   preview: {
     appEnv: 'preview',
+    androidPackage: 'com.roundtriptime.roundtrip.preview',
+    iosBundleIdentifier: 'com.roundtriptime.roundtrip.preview',
     showDevScreenHeader: false,
     useApiMocks: true,
   },
   production: {
     appEnv: 'production',
+    androidPackage: 'com.roundtriptime.roundtrip',
+    iosBundleIdentifier: 'com.roundtriptime.roundtrip',
     showDevScreenHeader: false,
     useApiMocks: false,
   },
@@ -31,7 +37,7 @@ const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://api.example.
 const usesCleartextApiTraffic = apiBaseUrl.startsWith('http://');
 
 const androidConfig: NonNullable<ExpoConfig['android']> & { usesCleartextTraffic?: boolean } = {
-  package: 'com.seungmin.roundtrip',
+  package: appMode.androidPackage,
   adaptiveIcon: {
     backgroundColor: '#3182F6',
     foregroundImage: './assets/images/android-icon-foreground.png',
@@ -53,7 +59,7 @@ const config: ExpoConfig = {
   newArchEnabled: true,
   icon: './assets/images/icon.png',
   ios: {
-    bundleIdentifier: 'com.seungmin.roundtrip',
+    bundleIdentifier: appMode.iosBundleIdentifier,
     infoPlist: usesCleartextApiTraffic
       ? {
           NSAppTransportSecurity: {
@@ -71,6 +77,8 @@ const config: ExpoConfig = {
   plugins: [
     'expo-router',
     'expo-secure-store',
+    'expo-video',
+    '@react-native-community/datetimepicker',
     [
       '@react-native-google-signin/google-signin',
       {
@@ -103,6 +111,8 @@ const config: ExpoConfig = {
   extra: {
     appMode,
     apiBaseUrl,
+    androidPackage: appMode.androidPackage,
+    iosBundleIdentifier: appMode.iosBundleIdentifier,
     googleIosUrlScheme,
     kakaoNativeAppKey,
     // EAS 가 `eas init` 시 `eas.projectId` 를 자동 주입함.

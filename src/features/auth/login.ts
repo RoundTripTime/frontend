@@ -1,3 +1,5 @@
+import Constants from 'expo-constants';
+
 import { logout as requestLogout, socialLogin } from '@/src/api/auth';
 import { clearStoredTokens, setStoredTokens } from '@/src/lib/tokenStore';
 import { shouldUseApiMocks } from '@/src/mocks';
@@ -15,7 +17,15 @@ export type LoginResult = {
 
 let googleConfigured = false;
 
+function canUseNativeSocialAuth() {
+  return Constants.appOwnership !== 'expo';
+}
+
 async function loadGoogleSignIn() {
+  if (!canUseNativeSocialAuth()) {
+    throw new Error('Google 네이티브 로그인은 Expo Go가 아닌 dev build에서 사용할 수 있습니다.');
+  }
+
   try {
     return await import('@react-native-google-signin/google-signin');
   } catch {
@@ -24,6 +34,10 @@ async function loadGoogleSignIn() {
 }
 
 async function loadKakaoLogin() {
+  if (!canUseNativeSocialAuth()) {
+    throw new Error('Kakao 네이티브 로그인은 Expo Go가 아닌 dev build에서 사용할 수 있습니다.');
+  }
+
   try {
     return await import('@react-native-seoul/kakao-login');
   } catch {
@@ -149,6 +163,10 @@ export async function loginWithKakao() {
 }
 
 async function signOutGoogle() {
+  if (shouldUseApiMocks() || !canUseNativeSocialAuth()) {
+    return;
+  }
+
   try {
     const { GoogleSignin } = await loadGoogleSignIn();
     await GoogleSignin.signOut();
@@ -158,6 +176,10 @@ async function signOutGoogle() {
 }
 
 async function signOutKakao() {
+  if (shouldUseApiMocks() || !canUseNativeSocialAuth()) {
+    return;
+  }
+
   try {
     const { logout: kakaoLogout } = await loadKakaoLogin();
     await kakaoLogout();

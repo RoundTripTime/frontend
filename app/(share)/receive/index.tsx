@@ -8,7 +8,7 @@ import { DevScreenHeader } from '@/src/components/DevScreenHeader';
 import { usePlaceCandidateStore } from '@/src/stores/placeCandidates';
 import { useAppTheme, type AppTheme } from '@/src/theme';
 
-const sampleUrl = 'https://www.youtube.com/shorts/roundtrip-tokyo-food';
+import type { MappedApiError } from '@/src/api/errorMap';
 
 export default function ShareReceiveScreen() {
   const theme = useAppTheme();
@@ -18,9 +18,11 @@ export default function ShareReceiveScreen() {
     const value = Array.isArray(params.url) ? params.url[0] : params.url;
     return value?.trim() || '';
   }, [params.url]);
-  const [url, setUrl] = useState(incomingUrl || sampleUrl);
+  const [url, setUrl] = useState(incomingUrl);
   const [status, setStatus] = useState<'idle' | 'submitting' | 'succeeded' | 'failed'>('idle');
   const [message, setMessage] = useState('');
+  const activeJobId = usePlaceCandidateStore((state) => state.jobId);
+  const activeSourceLink = usePlaceCandidateStore((state) => state.sourceLink);
   const setAnalysisResult = usePlaceCandidateStore((state) => state.setAnalysisResult);
   const autoSubmittedRef = useRef(false);
 
@@ -28,10 +30,10 @@ export default function ShareReceiveScreen() {
     const submitted = await submitSourceLink({ url: sharedUrl });
     const candidates = await listJobCandidates(submitted.job_id);
 
-    setAnalysisResult(candidates);
+    setAnalysisResult(candidates, submitted.job_id);
   };
 
-  const submitUrl = (sharedUrl = url) => {
+  const submitUrl = async (sharedUrl = url) => {
     const trimmedUrl = sharedUrl.trim();
 
     if (!trimmedUrl) {
@@ -42,9 +44,33 @@ export default function ShareReceiveScreen() {
 
     setStatus('submitting');
     setMessage('공유 링크를 제출하고 있어요.');
-    router.replace('/');
 
-    void createAnalysisJob(trimmedUrl);
+    try {
+      await createAnalysisJob(trimmedUrl);
+      setStatus('succeeded');
+      setMessage('분석을 시작했어요.');
+      router.replace('/places/recent');
+    } catch (error) {
+      const mappedError = error as Partial<MappedApiError>;
+
+      if (
+        mappedError.code === 'DUPLICATE_LINK' &&
+        activeJobId &&
+        activeSourceLink?.url === trimmedUrl
+      ) {
+        setStatus('succeeded');
+        setMessage('이미 처리 중인 링크예요.');
+        router.replace('/places/recent');
+        return;
+      }
+
+      setStatus('failed');
+      setMessage(
+        mappedError.code === 'DUPLICATE_LINK'
+          ? '이미 처리 중인 링크예요. 잠시 후 최근 추가한 장소에서 확인해주세요.'
+          : (mappedError.message ?? '링크 제출에 실패했어요. 잠시 후 다시 시도해주세요.'),
+      );
+    }
   };
 
   useEffect(() => {
@@ -54,7 +80,7 @@ export default function ShareReceiveScreen() {
 
     autoSubmittedRef.current = true;
     setUrl(incomingUrl);
-    submitUrl(incomingUrl);
+    void submitUrl(incomingUrl);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [incomingUrl]);
 
@@ -82,7 +108,9 @@ export default function ShareReceiveScreen() {
       />
       <TouchableOpacity
         disabled={!canSubmit}
-        onPress={() => submitUrl()}
+        onPress={() => {
+          void submitUrl();
+        }}
         style={[styles.submitButton, !canSubmit && styles.disabledButton]}
       >
         <Text style={styles.submitButtonText}>{isSubmitting ? '제출 중' : '제출'}</Text>

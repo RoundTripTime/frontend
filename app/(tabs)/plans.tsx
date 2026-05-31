@@ -362,7 +362,7 @@ function SwipePlanCard({ plan, styles, theme, onDelete, onShare }: SwipePlanCard
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    container: { backgroundColor: theme.semantic.background, gap: 16, padding: 20, paddingTop: 64 },
+    container: { backgroundColor: theme.semantic.background, gap: 16, padding: 20 },
     scroll: { backgroundColor: theme.semantic.background, flex: 1 },
     header: { gap: 12 },
     title: { color: theme.semantic.text, fontSize: 34, fontWeight: '900' },

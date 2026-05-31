@@ -1,10 +1,13 @@
 import { Link, type Href } from 'expo-router';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useDiscoverPlacesQuery } from '@/src/api/places/hooks';
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { EmptyState } from '@/src/components/EmptyState';
 import { CardGridSkeleton } from '@/src/components/LoadingSkeleton';
 import { RefreshableScrollView } from '@/src/components/RefreshableScrollView';
+import { PlaceCard } from '@/src/features/places/components/PlaceCard';
+import { getPlaceCountryLabel } from '@/src/features/places/viewModel';
 import { useMinimumLoading } from '@/src/hooks/useMinimumLoading';
 import { useAppTheme, type AppTheme } from '@/src/theme';
 
@@ -27,7 +30,6 @@ export default function ExploreScreen() {
         가능한 다음 이동 화면: S-05
       */}
       <Text style={styles.title}>둘러보기</Text>
-      <Text style={styles.sectionLabel}>지금 인기있는 장소</Text>
       <ScrollView
         horizontal
         contentContainerStyle={styles.chips}
@@ -41,18 +43,24 @@ export default function ExploreScreen() {
       </ScrollView>
       {isInitialLoading ? (
         <CardGridSkeleton />
+      ) : recommendations.length === 0 ? (
+        <EmptyState
+          description="새로운 추천 장소가 준비되면 이곳에 표시됩니다."
+          title="아직 장소가 없습니다"
+        />
       ) : (
         <View style={styles.grid}>
           {recommendations.map((place) => (
-            <Link key={place.place_id} href={`/places/${place.place_id}` as Href} asChild>
-              <TouchableOpacity style={styles.card}>
-                <View style={styles.thumbnail} />
-                <Text style={styles.cardTitle}>{place.canonical_name}</Text>
-                <Text style={styles.cardMeta}>
-                  {place.category} · {place.country_code}
-                </Text>
-                <Text style={styles.save}>저장</Text>
-              </TouchableOpacity>
+            <Link
+              key={place.place_id}
+              href={`/places/${place.place_id}?entry=explore` as Href}
+              asChild
+            >
+              <PlaceCard
+                category={place.category}
+                countryLabel={getPlaceCountryLabel(place.country_code)}
+                name={place.canonical_name}
+              />
             </Link>
           ))}
         </View>
@@ -63,10 +71,9 @@ export default function ExploreScreen() {
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    container: { backgroundColor: theme.semantic.background, gap: 18, padding: 20, paddingTop: 64 },
+    container: { backgroundColor: theme.semantic.background, gap: 18, padding: 20 },
     scroll: { backgroundColor: theme.semantic.background, flex: 1 },
     title: { color: theme.semantic.text, fontSize: 34, fontWeight: '900' },
-    sectionLabel: { color: theme.semantic.primary, fontSize: 14, fontWeight: '700' },
     chips: { flexDirection: 'row', gap: 8, paddingRight: 20 },
     chip: {
       backgroundColor: theme.semantic.surfaceMuted,
@@ -77,15 +84,4 @@ const createStyles = (theme: AppTheme) =>
       paddingVertical: 8,
     },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-    card: {
-      backgroundColor: theme.semantic.surface,
-      borderRadius: 8,
-      gap: 8,
-      padding: 12,
-      width: '48%',
-    },
-    thumbnail: { backgroundColor: theme.semantic.mediaPlaceholder, borderRadius: 6, height: 96 },
-    cardTitle: { color: theme.semantic.text, fontSize: 16, fontWeight: '700' },
-    cardMeta: { color: theme.semantic.textMuted, fontSize: 13 },
-    save: { color: theme.semantic.primary, fontWeight: '800' },
   });

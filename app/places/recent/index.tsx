@@ -1,18 +1,27 @@
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
   Text,
   View,
+  Alert,
   Pressable,
   type StyleProp,
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
 
+import {
+  candidateKeys,
+  useBatchUpdateCandidatesMutation,
+  useJobCandidatesQuery,
+} from '@/src/api/candidates/hooks';
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { EmptyState } from '@/src/components/EmptyState';
+import { PlanListSkeleton } from '@/src/components/LoadingSkeleton';
 import { createPlaceCandidateCardViewModel } from '@/src/features/places/viewModel';
+import { queryClient } from '@/src/lib/queryClient';
 import { usePlaceCandidateStore } from '@/src/stores/placeCandidates';
 import { useAppTheme, type AppTheme } from '@/src/theme';
 
@@ -48,11 +57,20 @@ function CandidateActionButton({
 export default function RecentPlacesScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
-  const candidates = usePlaceCandidateStore((state) => state.candidates);
-  const sourceLink = usePlaceCandidateStore((state) => state.sourceLink);
-  const acceptCandidates = usePlaceCandidateStore((state) => state.acceptCandidates);
-  const removeCandidates = usePlaceCandidateStore((state) => state.removeCandidates);
+  const cachedCandidates = usePlaceCandidateStore((state) => state.candidates);
+  const cachedSourceLink = usePlaceCandidateStore((state) => state.sourceLink);
+  const jobId = usePlaceCandidateStore((state) => state.jobId);
+  const setAnalysisResult = usePlaceCandidateStore((state) => state.setAnalysisResult);
+  const candidatesQuery = useJobCandidatesQuery(jobId ?? '');
+  const batchUpdateCandidatesMutation = useBatchUpdateCandidatesMutation();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const rawCandidates = candidatesQuery.data?.candidates ?? cachedCandidates;
+  const candidates = rawCandidates.filter((candidate) => candidate.status === 'proposed');
+  const sourceLink = candidatesQuery.data?.source_link ?? cachedSourceLink;
+  const sourceStatus = sourceLink?.status;
+  const isAnalysisWaiting = sourceStatus === 'pending' || sourceStatus === 'processing';
+  const analysisFailed = sourceStatus === 'failed';
+  const wasWaitingRef = useRef(false);
   const candidateCards = useMemo(
     () => candidates.map(createPlaceCandidateCardViewModel),
     [candidates],
@@ -63,9 +81,52 @@ export default function RecentPlacesScreen() {
   );
   const selectedCount = selectedIds.length;
   const allSelected = selectableIds.length > 0 && selectedCount === selectableIds.length;
+  const isMutating = batchUpdateCandidatesMutation.isPending;
 
-  const finishToHome = () => {
-    acceptCandidates(selectedIds);
+  useEffect(() => {
+    if (candidatesQuery.data && jobId) {
+      setAnalysisResult(candidatesQuery.data, jobId);
+    }
+  }, [candidatesQuery.data, jobId, setAnalysisResult]);
+
+  useEffect(() => {
+    if (isAnalysisWaiting) {
+      wasWaitingRef.current = true;
+      return;
+    }
+
+    if (wasWaitingRef.current && rawCandidates.length > 0) {
+      wasWaitingRef.current = false;
+      Alert.alert('분석 완료', `새 장소 후보가 ${rawCandidates.length}개 도착했어요.`);
+    }
+  }, [isAnalysisWaiting, rawCandidates.length]);
+
+  const updateSelectedCandidates = async (status: 'accepted' | 'rejected') => {
+    if (!jobId || selectedIds.length === 0) {
+      return false;
+    }
+
+    try {
+      await batchUpdateCandidatesMutation.mutateAsync({
+        candidates: selectedIds.map((candidateId) => ({
+          candidate_id: candidateId,
+          status,
+        })),
+      });
+      await queryClient.invalidateQueries({ queryKey: candidateKeys.byJob(jobId) });
+      return true;
+    } catch {
+      Alert.alert('처리 실패', '장소 후보를 처리하지 못했어요. 잠시 후 다시 시도해주세요.');
+      return false;
+    }
+  };
+
+  const finishToHome = async () => {
+    const succeeded = await updateSelectedCandidates('accepted');
+    if (!succeeded) {
+      return;
+    }
+    setSelectedIds([]);
     router.replace('/');
   };
 
@@ -81,14 +142,12 @@ export default function RecentPlacesScreen() {
     setSelectedIds(allSelected ? [] : selectableIds);
   };
 
-  const deleteSelected = () => {
-    removeCandidates(selectedIds);
+  const deleteSelected = async () => {
+    const succeeded = await updateSelectedCandidates('rejected');
+    if (!succeeded) {
+      return;
+    }
     setSelectedIds([]);
-  };
-
-  const addToPlan = () => {
-    acceptCandidates(selectedIds);
-    router.push('/plans/new');
   };
 
   return (
@@ -109,16 +168,37 @@ export default function RecentPlacesScreen() {
           <Text style={styles.selectAll}>{allSelected ? '전체 해제' : '전체 선택'}</Text>
         </Pressable>
       </View>
-      {candidateCards.length === 0 ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyText}>모든 후보를 처리했어요.</Text>
-        </View>
+      {candidatesQuery.isPending && !candidatesQuery.data && cachedCandidates.length === 0 ? (
+        <PlanListSkeleton count={3} />
+      ) : !jobId ? (
+        <EmptyState
+          description="URL을 공유하거나 제출하면 분석된 장소 후보가 이곳에 표시됩니다."
+          title="분석된 장소 후보가 없습니다"
+        />
+      ) : isAnalysisWaiting ? (
+        <EmptyState description="끝나면 알려드릴게요." title="분석 중입니다" />
+      ) : analysisFailed ? (
+        <EmptyState
+          description="링크를 다시 제출하거나 잠시 후 다시 시도해주세요."
+          title="분석에 실패했습니다"
+        />
+      ) : candidateCards.length === 0 ? (
+        <EmptyState
+          description={
+            rawCandidates.length === 0 ? '이 링크에서 추출된 장소가 없습니다.' : undefined
+          }
+          title={rawCandidates.length === 0 ? '추출된 장소가 없습니다' : '모든 후보를 처리했어요'}
+        />
       ) : (
         candidateCards.map((candidate) => (
           <Pressable
             key={candidate.id}
             style={[styles.card, selectedIds.includes(candidate.id) && styles.selectedCard]}
-            onPress={() => toggleCandidate(candidate.id)}
+            onPress={() => {
+              router.push(
+                `/places/${candidate.placeId}?entry=candidate&candidateId=${candidate.id}`,
+              );
+            }}
           >
             <View style={styles.cardPreview}>
               <View style={styles.thumbnail} />
@@ -128,34 +208,38 @@ export default function RecentPlacesScreen() {
                   {candidate.category} · {candidate.countryLabel}
                 </Text>
               </View>
-              <View style={[styles.check, selectedIds.includes(candidate.id) && styles.checked]}>
+              <Pressable
+                hitSlop={10}
+                style={[styles.check, selectedIds.includes(candidate.id) && styles.checked]}
+                onPress={(event) => {
+                  event.stopPropagation();
+                  toggleCandidate(candidate.id);
+                }}
+              >
                 <Text style={styles.checkText}>
                   {selectedIds.includes(candidate.id) ? '✓' : ''}
                 </Text>
-              </View>
+              </Pressable>
             </View>
           </Pressable>
         ))
       )}
       <View style={styles.bottomActions}>
         <CandidateActionButton
-          disabled={selectedCount === 0}
+          disabled={selectedCount === 0 || isMutating}
           label="플레이스에 추가"
-          onPress={finishToHome}
+          onPress={() => {
+            void finishToHome();
+          }}
           style={styles.primaryButton}
           textStyle={styles.primaryButtonText}
         />
         <CandidateActionButton
-          disabled={selectedCount === 0}
-          label="플랜에 추가"
-          onPress={addToPlan}
-          style={styles.secondaryButton}
-          textStyle={styles.secondaryButtonText}
-        />
-        <CandidateActionButton
-          disabled={selectedCount === 0}
+          disabled={selectedCount === 0 || isMutating}
           label="삭제"
-          onPress={deleteSelected}
+          onPress={() => {
+            void deleteSelected();
+          }}
           style={styles.deleteButton}
           textStyle={styles.deleteButtonText}
         />
@@ -171,7 +255,7 @@ const createStyles = (theme: AppTheme) =>
       gap: 14,
       padding: 20,
       paddingBottom: 32,
-      paddingTop: 32,
+      paddingTop: 20,
     },
     source: { backgroundColor: theme.semantic.primarySoft, borderRadius: 8, gap: 6, padding: 14 },
     sourceTitle: { color: theme.semantic.primaryDeep, fontWeight: '800' },
@@ -242,11 +326,6 @@ const createStyles = (theme: AppTheme) =>
       borderColor: theme.semantic.primary,
     },
     primaryButtonText: { color: theme.semantic.onPrimary, fontWeight: '800', textAlign: 'center' },
-    secondaryButton: {
-      backgroundColor: theme.semantic.background,
-      borderColor: theme.semantic.borderStrong,
-    },
-    secondaryButtonText: { color: theme.semantic.text, fontWeight: '800', textAlign: 'center' },
     deleteButton: {
       backgroundColor: theme.semantic.danger,
       borderColor: theme.semantic.danger,

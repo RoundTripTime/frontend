@@ -1,19 +1,33 @@
 import { Link, type Href } from 'expo-router';
+import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { useCommunityPostsQuery } from '@/src/api/community/hooks';
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { EmptyState } from '@/src/components/EmptyState';
 import { FeedSkeleton } from '@/src/components/LoadingSkeleton';
 import { RefreshableScrollView } from '@/src/components/RefreshableScrollView';
 import { useMinimumLoading } from '@/src/hooks/useMinimumLoading';
 import { useAppTheme, type AppTheme } from '@/src/theme';
 
+type FeedType = 'all' | 'following';
+
+const feedTabs: { feed?: FeedType; label: string }[] = [
+  { feed: 'all', label: '전체' },
+  { feed: 'following', label: '팔로잉' },
+  { label: '플랜 마켓' },
+];
+
 export default function CommunityScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
-  const postsQuery = useCommunityPostsQuery();
+  const [selectedFeed, setSelectedFeed] = useState<FeedType>('all');
+  const postsQuery = useCommunityPostsQuery({ feed: selectedFeed });
   const isInitialLoading = useMinimumLoading(postsQuery.isPending && !postsQuery.data);
   const posts = postsQuery.data?.items ?? [];
+  const emptyTitle =
+    selectedFeed === 'following' ? '팔로잉 피드에 글이 없습니다.' : '아직 커뮤니티 글이 없습니다.';
+
   return (
     <RefreshableScrollView
       contentContainerStyle={styles.container}
@@ -32,17 +46,24 @@ export default function CommunityScreen() {
         contentContainerStyle={styles.chips}
         showsHorizontalScrollIndicator={false}
       >
-        {['전체', '팔로잉', '플랜 마켓'].map((label, index) =>
-          label === '플랜 마켓' ? (
-            <Link key={label} href={'/community/market' as Href} asChild>
+        {feedTabs.map((tab) =>
+          tab.label === '플랜 마켓' ? (
+            <Link key={tab.label} href={'/community/market' as Href} asChild>
               <TouchableOpacity>
-                <Text style={[styles.chip, index === 2 && styles.activeChip]}>{label}</Text>
+                <Text style={styles.chip}>{tab.label}</Text>
               </TouchableOpacity>
             </Link>
           ) : (
-            <Text key={label} style={styles.chip}>
-              {label}
-            </Text>
+            <TouchableOpacity
+              key={tab.label}
+              onPress={() => {
+                setSelectedFeed(tab.feed ?? 'all');
+              }}
+            >
+              <Text style={[styles.chip, selectedFeed === tab.feed && styles.activeChip]}>
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
           ),
         )}
       </ScrollView>
@@ -54,11 +75,21 @@ export default function CommunityScreen() {
             <TouchableOpacity style={styles.card}>
               <View style={styles.avatar} />
               <Text style={styles.author}>{post.author.nickname}</Text>
-              <Text style={styles.body}>{post.content}</Text>
-              {post.tagged_itinerary ? (
-                <View style={styles.tagCard}>
-                  <Text style={styles.tagTitle}>태그된 플랜 · {post.tagged_itinerary.title}</Text>
-                </View>
+              <Text numberOfLines={3} style={styles.body}>
+                {post.content}
+              </Text>
+              {post.tagged_places.length > 0 ? (
+                <ScrollView
+                  horizontal
+                  contentContainerStyle={styles.tagRow}
+                  showsHorizontalScrollIndicator={false}
+                >
+                  {post.tagged_places.map((place) => (
+                    <Text key={place.place_id} style={styles.placeTag}>
+                      #{place.canonical_name}
+                    </Text>
+                  ))}
+                </ScrollView>
               ) : null}
               <Text style={styles.meta}>
                 좋아요 {post.like_count} · 댓글 {post.comment_count}
@@ -68,7 +99,7 @@ export default function CommunityScreen() {
         ))
       )}
       {!isInitialLoading && posts.length === 0 ? (
-        <Text style={styles.meta}>아직 커뮤니티 글이 없습니다.</Text>
+        <EmptyState description="새 글이 올라오면 이곳에 표시됩니다." title={emptyTitle} />
       ) : null}
       <TouchableOpacity style={styles.fab}>
         <Text style={styles.fabText}>글쓰기</Text>
@@ -79,7 +110,7 @@ export default function CommunityScreen() {
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    container: { backgroundColor: theme.semantic.background, gap: 16, padding: 20, paddingTop: 64 },
+    container: { backgroundColor: theme.semantic.background, gap: 16, padding: 20 },
     scroll: { backgroundColor: theme.semantic.background, flex: 1 },
     title: { color: theme.semantic.text, fontSize: 34, fontWeight: '900' },
     chips: { flexDirection: 'row', gap: 8, paddingRight: 20 },
@@ -105,8 +136,8 @@ const createStyles = (theme: AppTheme) =>
     },
     author: { color: theme.semantic.text, fontWeight: '800' },
     body: { color: theme.semantic.textSecondary, lineHeight: 20 },
-    tagCard: { backgroundColor: theme.semantic.input, borderRadius: 8, padding: 12 },
-    tagTitle: { color: theme.semantic.text, fontWeight: '700' },
+    placeTag: { color: theme.semantic.textMuted, fontSize: 14, fontWeight: '800' },
+    tagRow: { gap: 8, paddingRight: 16 },
     meta: { color: theme.semantic.textMuted },
     fab: {
       alignSelf: 'flex-end',

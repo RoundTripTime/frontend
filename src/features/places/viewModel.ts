@@ -85,6 +85,10 @@ export function createPlaceCardViewModel(place: PlaceSummary): PlaceCardViewMode
   };
 }
 
+export function getPlaceCountryLabel(countryCode: string) {
+  return getCountryLabel(countryCode);
+}
+
 export function createPlaceCandidateCardViewModel(
   candidate: PlaceCandidate,
 ): PlaceCandidateCardViewModel {

@@ -66,7 +66,7 @@ export default function PlanShareScreen() {
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    container: { backgroundColor: theme.semantic.background, gap: 14, padding: 20, paddingTop: 32 },
+    container: { backgroundColor: theme.semantic.background, gap: 14, padding: 20 },
     scroll: { backgroundColor: theme.semantic.background, flex: 1 },
     title: { color: theme.semantic.text, fontSize: 28, fontWeight: '800' },
     meta: { color: theme.semantic.textMuted },

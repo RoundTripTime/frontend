@@ -1,5 +1,6 @@
 import type { ID } from '../common';
 import type { PlaceSummary } from '../places/types';
+import type { JobStatus, SourceType } from '../sourceLinks/types';
 
 export type CandidateStatus = 'proposed' | 'accepted' | 'rejected' | 'edited';
 
@@ -20,9 +21,14 @@ export type PlaceCandidate = {
 
 export type PlaceCandidatesResponse = {
   source_link: {
+    id?: ID;
+    source_link_id?: ID;
+    source_type?: SourceType;
+    status?: JobStatus;
+    submitted_at?: string;
     url: string;
-    title: string;
-    thumbnail_url: string;
+    title: string | null;
+    thumbnail_url: string | null;
   };
   candidates: PlaceCandidate[];
 };

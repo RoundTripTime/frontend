@@ -6,6 +6,7 @@ import { useCollectionPlacesQuery, useCollectionsQuery } from '@/src/api/collect
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
 import { CardGridSkeleton } from '@/src/components/LoadingSkeleton';
 import { RefreshableScrollView } from '@/src/components/RefreshableScrollView';
+import { AddPlaceCard, PlaceCard } from '@/src/features/places/components/PlaceCard';
 import { createPlaceCardViewModel, type PlaceRegionFilter } from '@/src/features/places/viewModel';
 import { useMinimumLoading } from '@/src/hooks/useMinimumLoading';
 import {
@@ -75,25 +76,16 @@ export default function HomeScreen() {
         ) : (
           <View style={styles.grid}>
             {filteredPlaces.map((place) => (
-              <Link key={place.id} href={`/places/${place.id}` as Href} asChild>
-                <TouchableOpacity style={styles.card}>
-                  <View style={styles.thumbnail} />
-                  <Text style={styles.categoryBadge}>{place.category}</Text>
-                  <Text style={styles.cardTitle}>{place.name}</Text>
-                  <Text style={styles.cardMeta}>{place.countryLabel}</Text>
-                </TouchableOpacity>
+              <Link key={place.id} href={`/places/${place.id}?entry=my-place` as Href} asChild>
+                <PlaceCard
+                  category={place.category}
+                  countryLabel={place.countryLabel}
+                  name={place.name}
+                />
               </Link>
             ))}
-            {filteredPlaces.length === 0 ? (
-              <Text style={styles.cardMeta}>저장된 장소가 없습니다.</Text>
-            ) : null}
             <Link href={'/(share)/receive' as Href} asChild>
-              <TouchableOpacity style={styles.addCard}>
-                <View style={styles.addPreview}>
-                  <Text style={styles.addIcon}>+</Text>
-                </View>
-                <Text style={styles.addText}>플레이스 추가</Text>
-              </TouchableOpacity>
+              <AddPlaceCard />
             </Link>
           </View>
         )}
@@ -122,7 +114,7 @@ const createStyles = (theme: AppTheme) =>
       gap: 20,
       padding: 20,
       paddingBottom: 112,
-      paddingTop: 64,
+      paddingTop: 20,
     },
     header: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
     title: { color: theme.semantic.text, fontSize: 34, fontWeight: '900' },
@@ -166,52 +158,5 @@ const createStyles = (theme: AppTheme) =>
     pendingBannerText: { color: theme.semantic.text, flex: 1, fontWeight: '800' },
     pendingBannerAction: { color: theme.semantic.primary, fontSize: 22, fontWeight: '900' },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-    card: {
-      backgroundColor: theme.semantic.surface,
-      borderColor: theme.semantic.border,
-      borderRadius: 8,
-      borderWidth: 1,
-      gap: 8,
-      padding: 12,
-      width: '48%',
-    },
-    thumbnail: { backgroundColor: theme.semantic.mediaPlaceholder, borderRadius: 6, height: 96 },
-    categoryBadge: {
-      alignSelf: 'flex-start',
-      backgroundColor: theme.semantic.primary,
-      borderRadius: 12,
-      color: theme.semantic.onPrimary,
-      fontSize: 12,
-      fontWeight: '800',
-      overflow: 'hidden',
-      paddingHorizontal: 9,
-      paddingVertical: 4,
-    },
-    cardTitle: { color: theme.semantic.text, fontSize: 16, fontWeight: '800' },
     cardMeta: { color: theme.semantic.textMuted, fontSize: 13 },
-    addCard: {
-      backgroundColor: 'transparent',
-      borderRadius: 8,
-      gap: 8,
-      padding: 12,
-      width: '48%',
-    },
-    addPreview: {
-      alignItems: 'center',
-      backgroundColor: theme.semantic.input,
-      aspectRatio: 16 / 9,
-      borderColor: theme.semantic.borderStrong,
-      borderRadius: 6,
-      borderStyle: 'dashed',
-      borderWidth: 1,
-      justifyContent: 'center',
-      width: '100%',
-    },
-    addIcon: {
-      color: theme.semantic.primary,
-      fontSize: 28,
-      fontWeight: '900',
-      lineHeight: 30,
-    },
-    addText: { color: theme.semantic.textSecondary, fontWeight: '800' },
   });

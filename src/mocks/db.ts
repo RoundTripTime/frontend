@@ -1,7 +1,7 @@
 import {
   mockAccessToken,
-  mockItineraryDetail,
   mockItineraries,
+  mockItineraryDetail,
   mockPlaces,
   mockRefreshToken,
   mockUser,
@@ -141,7 +141,7 @@ const jobs: ExtractionJob[] = [
   },
 ];
 
-const candidates: PlaceCandidate[] = mockPlaces.map((place, index) => ({
+const candidates: PlaceCandidate[] = mockPlaces.slice(0, 4).map((place, index) => ({
   candidate_id: `mock-candidate-${index + 1}`,
   candidate_name: place.canonical_name,
   category: place.category,
@@ -173,11 +173,14 @@ const itineraries: Itinerary[] = [
   },
 ];
 
+const sampleCommunityPostContent =
+  '도쿄 3박 4일 동안 다녀온 동선이 생각보다 좋아서 공유합니다. 첫날은 시부야와 하라주쿠를 가볍게 걷고, 둘째 날에는 츠키지 시장에서 아침을 먹은 뒤 긴자 쪽으로 이동했어요! 카페와 식당 사이 거리가 멀지 않아서 중간중간 쉬어가기 좋았고, 저녁에는 신주쿠 쪽으로 넘어가면 교통도 편했습니다. 처음 도쿄 여행을 계획하는 분이라면 이 코스를 기반으로 취향에 맞게 장소를 조금씩 바꿔도 괜찮을 것 같아요.';
+
 const communityPosts: CommunityPost[] = [
   {
     post_id: 'sample-post',
     author: currentAuthor,
-    content: '도쿄 3박 4일 동선이 좋아서 공유합니다.',
+    content: sampleCommunityPostContent,
     tagged_places: [mockPlaces[0]!],
     tagged_itinerary: { itinerary_id: 'draft-plan', title: '도쿄 여름 여행' },
     like_count: 24,
@@ -195,6 +198,10 @@ const comments: CommunityComment[] = [
     created_at: '2026-05-16T00:00:00Z',
   },
 ];
+
+const commentsByPostId: Record<string, CommunityComment[]> = {
+  'sample-post': comments,
+};
 
 const reviews: PlaceReview[] = [
   {
@@ -304,6 +311,7 @@ export const mockDb = {
   candidates,
   collections,
   comments,
+  commentsByPostId,
   communityPosts,
   creditBalance: 3,
   creditHistories,
