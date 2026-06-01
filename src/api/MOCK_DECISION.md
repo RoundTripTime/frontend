@@ -13,4 +13,3 @@ WF-07 이후 개발 환경에서는 Axios mock adapter를 도입한다.
 - `src/mocks/fixtures.ts`: 공통 fixture 데이터
 - `src/mocks/handlers.ts`: API spec 기반 mock route resolver
 - `src/mocks/index.ts`: Axios mock adapter 설치 함수
-- `mocks/handlers.ts`: WF-07 산출물 경로용 핸들러 재수출

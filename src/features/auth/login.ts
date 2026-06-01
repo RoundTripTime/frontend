@@ -1,8 +1,8 @@
 import Constants from 'expo-constants';
 
 import { logout as requestLogout, socialLogin } from '@/src/api/auth';
+import { shouldUseApiMocks } from '@/src/lib/appMode';
 import { clearStoredTokens, setStoredTokens } from '@/src/lib/tokenStore';
-import { shouldUseApiMocks } from '@/src/mocks';
 
 import type { AuthUser, SocialLoginResponse } from '@/src/api/auth/types';
 

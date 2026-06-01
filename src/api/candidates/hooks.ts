@@ -1,10 +1,10 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 
+import { queryKeys } from '@/src/lib/queryClient';
+
 import { batchUpdateCandidates, listJobCandidates, updateCandidate } from '../candidates';
 
-export const candidateKeys = {
-  byJob: (jobId: string) => ['candidates', 'job', jobId] as const,
-};
+export const candidateKeys = queryKeys.candidates;
 
 export function useJobCandidatesQuery(jobId: string) {
   return useQuery({

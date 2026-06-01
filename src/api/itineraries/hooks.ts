@@ -1,5 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 
+import { queryKeys } from '@/src/lib/queryClient';
+
 import {
   addItineraryItem,
   createItinerary,
@@ -17,14 +19,7 @@ import {
 
 import type { QueryParams } from '../common';
 
-export const itineraryKeys = {
-  lists: ['itineraries'] as const,
-  list: (params?: QueryParams) => [...itineraryKeys.lists, params] as const,
-  detail: (itineraryId: string) => ['itineraries', itineraryId] as const,
-  share: (itineraryId: string) => ['itineraries', itineraryId, 'share'] as const,
-  ota: (itineraryId: string, params: QueryParams) =>
-    ['itineraries', itineraryId, 'ota-links', params] as const,
-};
+export const itineraryKeys = queryKeys.itineraries;
 
 export function useItinerariesQuery(params?: QueryParams) {
   return useQuery({ queryKey: itineraryKeys.list(params), queryFn: () => listItineraries(params) });

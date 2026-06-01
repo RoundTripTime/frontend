@@ -1,5 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 
+import { queryKeys } from '@/src/lib/queryClient';
+
 import {
   createCommunityComment,
   createCommunityPost,
@@ -18,11 +20,8 @@ import {
 import type { QueryParams } from '../common';
 
 export const communityKeys = {
-  posts: (params?: QueryParams) => ['community', 'posts', params] as const,
-  post: (postId: string) => ['community', 'posts', postId] as const,
-  comments: (postId: string, params?: QueryParams) =>
-    ['community', 'posts', postId, 'comments', params] as const,
-  profile: (userId: string) => ['users', userId, 'profile'] as const,
+  ...queryKeys.community,
+  profile: queryKeys.users.profile,
 };
 
 export function useCommunityPostsQuery(params?: QueryParams) {

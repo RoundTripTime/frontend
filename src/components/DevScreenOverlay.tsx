@@ -1,18 +1,13 @@
-import Constants from 'expo-constants';
 import { usePathname } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { shouldShowDevScreenHeader } from '@/src/lib/appMode';
 import { useAppTheme } from '@/src/theme';
 
 type ScreenMeta = {
   name: string;
   number: string;
 };
-
-const appMode = Constants.expoConfig?.extra?.appMode as
-  | { showDevScreenHeader?: boolean }
-  | undefined;
-const showDevScreenHeader = appMode?.showDevScreenHeader === true;
 
 const screenMetaByPath: { pattern: RegExp; meta: ScreenMeta }[] = [
   { pattern: /^\/$/, meta: { name: '홈 / 내 장소', number: 'S-02' } },
@@ -58,7 +53,7 @@ export function DevScreenOverlay() {
   const theme = useAppTheme();
   const screenMeta = getScreenMeta(pathname);
 
-  if (!showDevScreenHeader || !screenMeta) {
+  if (!shouldShowDevScreenHeader || !screenMeta) {
     return null;
   }
 

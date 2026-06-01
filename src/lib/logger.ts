@@ -1,4 +1,4 @@
-import Constants from 'expo-constants';
+import { currentAppEnv } from './appMode';
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -8,9 +8,6 @@ const LEVEL_ORDER: Record<LogLevel, number> = {
   warn: 2,
   error: 3,
 };
-
-const appMode = Constants.expoConfig?.extra?.appMode as { appEnv?: string } | undefined;
-const currentAppEnv = appMode?.appEnv ?? 'development';
 
 const minLevel: LogLevel = currentAppEnv === 'production' ? 'warn' : 'debug';
 

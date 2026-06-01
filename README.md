@@ -19,7 +19,10 @@ React Native (Expo) frontend for the RoundTrip travel planning app.
 nvm use
 npm install
 cp .env.example .env   # fill in keys as needed
+npm start
 ```
+
+For development context, read [DEVELOPMENT.md](DEVELOPMENT.md) first.
 
 ## Commands
 

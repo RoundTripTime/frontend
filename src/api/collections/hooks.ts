@@ -1,5 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 
+import { queryKeys } from '@/src/lib/queryClient';
+
 import {
   addCollectionPlace,
   createCollection,
@@ -11,11 +13,7 @@ import {
   updateCollection,
 } from '../collections';
 
-export const collectionKeys = {
-  lists: ['collections'] as const,
-  places: (collectionId: string) => ['collections', collectionId, 'places'] as const,
-  share: (collectionId: string) => ['collections', collectionId, 'share'] as const,
-};
+export const collectionKeys = queryKeys.collections;
 
 export function useCollectionsQuery() {
   return useQuery({ queryKey: collectionKeys.lists, queryFn: listCollections });

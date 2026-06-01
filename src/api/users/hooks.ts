@@ -1,10 +1,10 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 
+import { queryKeys } from '@/src/lib/queryClient';
+
 import { deleteMe, getMe, updateMe } from '../users';
 
-export const userKeys = {
-  me: ['users', 'me'] as const,
-};
+export const userKeys = queryKeys.users;
 
 export function useMeQuery() {
   return useQuery({ queryKey: userKeys.me, queryFn: getMe });

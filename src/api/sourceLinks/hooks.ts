@@ -1,13 +1,12 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 
+import { queryKeys } from '@/src/lib/queryClient';
+
 import { listSourceLinks, submitSourceLink } from '../sourceLinks';
 
 import type { QueryParams } from '../common';
 
-export const sourceLinkKeys = {
-  lists: ['source-links'] as const,
-  list: (params?: QueryParams) => [...sourceLinkKeys.lists, params] as const,
-};
+export const sourceLinkKeys = queryKeys.sourceLinks;
 
 export function useSourceLinksQuery(params?: QueryParams) {
   return useQuery({

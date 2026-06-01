@@ -1,9 +1,8 @@
 import * as Sentry from '@sentry/react-native';
-import Constants from 'expo-constants';
+
+import { currentAppEnv } from './appMode';
 
 const dsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
-const appMode = Constants.expoConfig?.extra?.appMode as { appEnv?: string } | undefined;
-const currentAppEnv = appMode?.appEnv ?? 'development';
 
 let initialized = false;
 

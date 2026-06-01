@@ -1,11 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 
+import { queryKeys } from '@/src/lib/queryClient';
+
 import { getPublicCollection, getPublicItinerary } from '../publicShare';
 
-export const publicShareKeys = {
-  itinerary: (shareToken: string) => ['public', 'itineraries', shareToken] as const,
-  collection: (shareToken: string) => ['public', 'collections', shareToken] as const,
-};
+export const publicShareKeys = queryKeys.publicShare;
 
 export function usePublicItineraryQuery(shareToken: string) {
   return useQuery({

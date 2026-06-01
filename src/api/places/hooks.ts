@@ -1,5 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 
+import { queryKeys } from '@/src/lib/queryClient';
+
 import {
   createPlaceReview,
   deletePlaceReview,
@@ -13,15 +15,7 @@ import {
 
 import type { QueryParams } from '../common';
 
-export const placeKeys = {
-  detail: (placeId: string) => ['places', placeId] as const,
-  search: (params: QueryParams) => ['places', 'search', params] as const,
-  similar: (params: QueryParams) => ['places', 'similar', params] as const,
-  discover: (params?: QueryParams) => ['discover', params] as const,
-  reviews: (placeId: string, params?: QueryParams) =>
-    ['places', placeId, 'reviews', params] as const,
-  sourceLinks: (placeId: string) => ['places', placeId, 'source-links'] as const,
-};
+export const placeKeys = queryKeys.places;
 
 export function usePlaceQuery(placeId: string) {
   return useQuery({

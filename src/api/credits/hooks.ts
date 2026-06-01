@@ -1,13 +1,12 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 
+import { queryKeys } from '@/src/lib/queryClient';
+
 import { completeAd, getCreditBalance, listCreditHistory, startAd } from '../credits';
 
 import type { QueryParams } from '../common';
 
-export const creditKeys = {
-  balance: ['credits', 'me'] as const,
-  history: (params?: QueryParams) => ['credits', 'me', 'history', params] as const,
-};
+export const creditKeys = queryKeys.credits;
 
 export function useCreditBalanceQuery() {
   return useQuery({ queryKey: creditKeys.balance, queryFn: getCreditBalance });

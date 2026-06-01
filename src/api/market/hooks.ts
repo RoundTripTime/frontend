@@ -1,5 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 
+import { queryKeys } from '@/src/lib/queryClient';
+
 import {
   createMarketPlan,
   deleteMarketPlan,
@@ -10,11 +12,7 @@ import {
 
 import type { QueryParams } from '../common';
 
-export const marketKeys = {
-  plans: (params?: QueryParams) => ['market', 'plans', params] as const,
-  preview: (marketPlanId: string) => ['market', 'plans', marketPlanId, 'preview'] as const,
-  detail: (marketPlanId: string) => ['market', 'plans', marketPlanId] as const,
-};
+export const marketKeys = queryKeys.market;
 
 export function useMarketPlansQuery(params?: QueryParams) {
   return useQuery({ queryKey: marketKeys.plans(params), queryFn: () => listMarketPlans(params) });

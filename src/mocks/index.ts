@@ -7,17 +7,12 @@ import {
   type AxiosResponse,
   type InternalAxiosRequestConfig,
 } from 'axios';
-import Constants from 'expo-constants';
 
+import { shouldUseApiMocks } from '@/src/lib/appMode';
 import { logger } from '@/src/lib/logger';
 import { resolveMockResponse } from '@/src/mocks/handlers';
 
 const installedClients = new WeakSet<AxiosInstance>();
-const appMode = Constants.expoConfig?.extra?.appMode as { useApiMocks?: boolean } | undefined;
-
-export function shouldUseApiMocks() {
-  return appMode?.useApiMocks ?? true;
-}
 
 function createAxiosResponse(
   config: InternalAxiosRequestConfig,

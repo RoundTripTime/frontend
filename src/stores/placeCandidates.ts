@@ -1,6 +1,6 @@
-import Constants from 'expo-constants';
 import { create } from 'zustand';
 
+import { isDevelopmentMode } from '@/src/lib/appMode';
 import { mockPlaces } from '@/src/mocks/fixtures';
 
 import type { PlaceCandidate, PlaceCandidatesResponse } from '@/src/api/candidates/types';
@@ -16,8 +16,7 @@ type PlaceCandidateState = {
   setAnalysisResult: (result: PlaceCandidatesResponse, jobId?: string) => void;
 };
 
-const appMode = Constants.expoConfig?.extra?.appMode as { appEnv?: string } | undefined;
-const shouldSeedDevelopmentCandidates = appMode?.appEnv === 'development';
+const shouldSeedDevelopmentCandidates = isDevelopmentMode;
 const DEVELOPMENT_CANDIDATE_LIMIT = 4;
 const DEVELOPMENT_JOB_ID = 'mock-job';
 const DEVELOPMENT_SOURCE_LINK_ID = 'mock-source-link';
