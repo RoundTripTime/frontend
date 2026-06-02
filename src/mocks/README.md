@@ -1,6 +1,6 @@
 # Mock Guide
 
-`src/mocks`는 development/preview 환경에서 API 서버 없이 화면을 개발하기 위한 Axios mock 레이어다.
+`src/mocks`는 API 서버 없이 화면을 확인해야 하는 예외 상황을 위한 Axios mock 레이어다. 현재 협업 개발의 표준은 EAS development build + 실서버 API 호출이며, mock 기반 신규 개발은 중단한다.
 
 ## 모드별 정책
 
@@ -23,6 +23,7 @@
 - mock 응답 구조는 `docs/TDD/API spec.md`를 따른다.
 - 서버 API와 다르게 mock만 동작하는 기능을 만들지 않는다.
 - development seed가 필요한 경우 store에서 명시적으로 `APP_ENV=development` 조건을 둔다.
+- 실서버 API로 재현 가능한 작업은 mock을 추가하지 않는다.
 
 ## 현재 development seed
 

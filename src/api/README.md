@@ -1,6 +1,6 @@
 # API Layer Guide
 
-API 레이어는 실제 서버 호출 형태를 기준으로 작성한다. development/preview mock은 Axios adapter가 같은 API 호출을 가로채는 방식으로만 동작한다.
+API 레이어는 실제 서버 호출 형태를 기준으로 작성한다. 협업 개발의 기본 환경은 EAS development build + `APP_ENV=production`이며, mock adapter는 기본 개발 경로가 아니다.
 
 ## 파일 구조
 
@@ -16,7 +16,8 @@ API 레이어는 실제 서버 호출 형태를 기준으로 작성한다. devel
 - 화면은 Axios를 직접 호출하지 않고 hook 또는 API 함수를 사용한다.
 - query key는 `hooks.ts`의 `*Keys` 객체에 모은다.
 - mutation 성공 후에는 invalidate 또는 `queryClient.setQueryData` 중 하나를 명확히 선택한다.
-- production에서는 mock adapter를 설치하지 않는다.
+- `APP_ENV=production`에서는 mock adapter를 설치하지 않는다.
+- 신규 기능은 mock이 아니라 실제 API 호출과 서버 응답을 기준으로 구현한다.
 - API spec과 다른 임시 필드가 필요하면 TODO로 남기기보다 `docs/TDD/API spec.md` 수정 논의가 먼저다.
 
 ## 디버깅
@@ -25,7 +26,7 @@ API 로그는 request/response interceptor에서 출력한다. 민감한 값은 
 
 확인 순서:
 
-1. `APP_ENV` 확인
+1. `APP_ENV=production` 여부 확인
 2. `EXPO_PUBLIC_API_BASE_URL` 확인
 3. API 로그의 method/url/status 확인
 4. `src/api/errorMap.ts` 매핑 확인

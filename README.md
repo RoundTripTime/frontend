@@ -12,6 +12,7 @@ React Native (Expo) frontend for the RoundTrip travel planning app.
 - Node 20.19.4 (see `.nvmrc` — `nvm use` to activate)
 - npm 10.x (bundled with Node 20.19.4)
 - Xcode (iOS) / Android Studio (Android) — only for Simulator / Emulator
+- EAS CLI (`npm install -g eas-cli`) — required for development builds
 
 ## Setup
 
@@ -19,23 +20,31 @@ React Native (Expo) frontend for the RoundTrip travel planning app.
 nvm use
 npm install
 cp .env.example .env   # fill in keys as needed
-npm start
 ```
 
 For development context, read [DEVELOPMENT.md](DEVELOPMENT.md) first.
 
+This project uses **EAS development builds** as the standard development environment. Expo Go is not sufficient for native login, share intent, push notification, or background fetch.
+
+```bash
+eas build --profile development --platform ios
+eas build --profile development --platform android
+npm run start:dev
+```
+
 ## Commands
 
-| Command                | Purpose                                   |
-| ---------------------- | ----------------------------------------- |
-| `npm start`            | Metro bundler (use Expo Go for early dev) |
-| `npm run ios`          | Open iOS Simulator                        |
-| `npm run android`      | Open Android Emulator                     |
-| `npm run lint`         | ESLint                                    |
-| `npm run lint:fix`     | ESLint with auto-fix                      |
-| `npm run format`       | Prettier write                            |
-| `npm run format:check` | Prettier check (CI)                       |
-| `npm run typecheck`    | TypeScript --noEmit                       |
+| Command                | Purpose                         |
+| ---------------------- | ------------------------------- |
+| `npm start`            | Metro bundler                   |
+| `npm run start:dev`    | Metro for EAS development build |
+| `npm run ios`          | Open iOS Simulator              |
+| `npm run android`      | Open Android Emulator           |
+| `npm run lint`         | ESLint                          |
+| `npm run lint:fix`     | ESLint with auto-fix            |
+| `npm run format`       | Prettier write                  |
+| `npm run format:check` | Prettier check (CI)             |
+| `npm run typecheck`    | TypeScript --noEmit             |
 
 ## Git
 

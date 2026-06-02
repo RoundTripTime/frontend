@@ -9,11 +9,11 @@
 │  Layer 1 · 로컬 개발                                             │
 │    .env (gitignore) ← .env.example (committed) 보고 채움         │
 │    EXPO_PUBLIC_* 는 client 번들에 인라인                         │
-│    APP_ENV=development                                           │
+│    APP_ENV=production 이 기본값                                  │
 ├──────────────────────────────────────────────────────────────────┤
 │  Layer 2 · 빌드 시점 (eas.json profile + EAS Secrets)            │
 │    .env 파일 사용 X. 모든 값은 EAS 가 주입.                      │
-│    APP_ENV={development|preview|production}                      │
+│    development/preview profile 모두 APP_ENV=production           │
 ├──────────────────────────────────────────────────────────────────┤
 │  Layer 3 · 런타임 (앱 안에서 접근)                               │
 │    클라이언트 키 → process.env.EXPO_PUBLIC_*                     │
@@ -42,24 +42,35 @@
 
 > Expo SDK 50+ 는 `.env`, `.env.local`, `.env.[mode]`, `.env.[mode].local` 을 자동 로드한다 (Vite 와 동일 우선순위).
 
-## EAS Secrets 사용 (WF-17 진입 시)
+## EAS build profile
 
-eas.json 빌드 프로필에서 다음 둘 중 하나로 비밀 값 주입:
+현재는 배포판/개발판 앱 ID를 분리하지 않는다. iOS bundle id와 Android package는 `APP_ENV`와 무관하게 `com.roundtriptime.roundtrip` 하나로 고정한다.
+
+`eas.json`은 협업 개발을 위해 다음 profile을 둔다.
+
+- `development`: EAS dev client. 개발자 실기기에서 Metro에 붙여 디버깅한다.
+- `preview`: 내부 QA/시연용 standalone build.
+
+두 profile 모두 실서버 기준이다.
 
 ```json
 {
   "build": {
-    "production": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
       "env": {
         "APP_ENV": "production",
-        "EXPO_PUBLIC_API_BASE_URL": "https://api.roundtrip.example.com/v1"
+        "EXPO_PUBLIC_API_BASE_URL": "https://roundtrip.duckdns.org"
       }
     }
   }
 }
 ```
 
-또는 `eas secret:create` 로 등록 후 자동 주입:
+## EAS Secrets 사용
+
+실제 키는 `eas.json`에 평문으로 쓰지 않고 `eas secret:create`로 등록한다.
 
 ```bash
 eas secret:create --scope project --name EXPO_PUBLIC_GOOGLE_MAPS_API_KEY --value <키>
@@ -94,3 +105,4 @@ const appEnv = Constants.expoConfig?.extra?.appEnv;
 | --- | --- | --- |
 | 2026-05-06 | 3계층 구조 (`.env` / EAS Secrets / extra) 확정 | Expo SDK 54 표준 + 비밀 분리 원칙 |
 | 2026-05-06 | `extra.appEnv` 만 우선 노출 | 다른 변수는 해당 WF 진입 시 추가 |
+| 2026-06-01 | 단일 앱 ID + EAS development build + 실서버 API를 협업 표준으로 확정 | Expo Go 기능 제한 해소, 빠른 실기기 디버깅 우선 |

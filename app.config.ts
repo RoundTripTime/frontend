@@ -1,24 +1,23 @@
 import type { ExpoConfig } from 'expo/config';
 
+const APP_IDENTIFIERS = {
+  androidPackage: 'com.roundtriptime.roundtrip',
+  iosBundleIdentifier: 'com.roundtriptime.roundtrip',
+} as const;
+
 const APP_ENV_MODES = {
   development: {
     appEnv: 'development',
-    androidPackage: 'com.roundtriptime.roundtrip.dev',
-    iosBundleIdentifier: 'com.roundtriptime.roundtrip.dev',
     showDevScreenHeader: true,
     useApiMocks: true,
   },
   preview: {
     appEnv: 'preview',
-    androidPackage: 'com.roundtriptime.roundtrip.preview',
-    iosBundleIdentifier: 'com.roundtriptime.roundtrip.preview',
     showDevScreenHeader: false,
     useApiMocks: true,
   },
   production: {
     appEnv: 'production',
-    androidPackage: 'com.roundtriptime.roundtrip',
-    iosBundleIdentifier: 'com.roundtriptime.roundtrip',
     showDevScreenHeader: false,
     useApiMocks: false,
   },
@@ -33,11 +32,11 @@ const googleIosUrlScheme =
   process.env.EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME ?? 'com.googleusercontent.apps.REPLACE_ME';
 const kakaoNativeAppKey =
   process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY ?? 'KAKAO_NATIVE_APP_KEY_REQUIRED';
-const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://api.example.com';
+const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://roundtrip.duckdns.org';
 const usesCleartextApiTraffic = apiBaseUrl.startsWith('http://');
 
 const androidConfig: NonNullable<ExpoConfig['android']> & { usesCleartextTraffic?: boolean } = {
-  package: appMode.androidPackage,
+  package: APP_IDENTIFIERS.androidPackage,
   adaptiveIcon: {
     backgroundColor: '#3182F6',
     foregroundImage: './assets/images/android-icon-foreground.png',
@@ -50,6 +49,7 @@ const androidConfig: NonNullable<ExpoConfig['android']> & { usesCleartextTraffic
 };
 
 const config: ExpoConfig = {
+  owner: 'roundtriptime',
   name: 'Round Trip',
   slug: 'round-trip',
   scheme: 'roundtrip',
@@ -59,7 +59,7 @@ const config: ExpoConfig = {
   newArchEnabled: true,
   icon: './assets/images/icon.png',
   ios: {
-    bundleIdentifier: appMode.iosBundleIdentifier,
+    bundleIdentifier: APP_IDENTIFIERS.iosBundleIdentifier,
     infoPlist: usesCleartextApiTraffic
       ? {
           NSAppTransportSecurity: {
@@ -79,6 +79,14 @@ const config: ExpoConfig = {
     'expo-secure-store',
     'expo-video',
     '@react-native-community/datetimepicker',
+    [
+      'expo-build-properties',
+      {
+        android: {
+          kotlinVersion: '2.1.20',
+        },
+      },
+    ],
     [
       '@react-native-google-signin/google-signin',
       {
@@ -109,14 +117,16 @@ const config: ExpoConfig = {
     reactCompiler: true,
   },
   extra: {
+    eas: {
+      projectId: 'cc78e6d8-c816-40b2-bd08-17583fed348a',
+    },
     appMode,
     apiBaseUrl,
-    androidPackage: appMode.androidPackage,
-    iosBundleIdentifier: appMode.iosBundleIdentifier,
+    androidPackage: APP_IDENTIFIERS.androidPackage,
+    iosBundleIdentifier: APP_IDENTIFIERS.iosBundleIdentifier,
     googleIosUrlScheme,
     kakaoNativeAppKey,
-    // EAS 가 `eas init` 시 `eas.projectId` 를 자동 주입함.
-    // 그 외 런타임 키는 `EXPO_PUBLIC_*` 로 직접 접근 (process.env.EXPO_PUBLIC_*).
+    // 런타임 키는 `EXPO_PUBLIC_*` 로 직접 접근 (process.env.EXPO_PUBLIC_*).
   },
 };
 
