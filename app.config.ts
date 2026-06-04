@@ -78,7 +78,9 @@ const config: ExpoConfig = {
     'expo-router',
     'expo-secure-store',
     'expo-video',
+    'expo-font',
     '@react-native-community/datetimepicker',
+    '@sentry/react-native',
     [
       'expo-build-properties',
       {
