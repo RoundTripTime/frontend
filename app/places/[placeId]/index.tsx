@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { Alert, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { WebView } from 'react-native-webview';
 
 import {
   collectionKeys,
@@ -15,6 +16,8 @@ import { createPlaceDetailViewModel } from '@/src/features/places/viewModel';
 import { queryClient } from '@/src/lib/queryClient';
 import { usePlaceCandidateStore } from '@/src/stores/placeCandidates';
 import { useAppTheme, type AppTheme } from '@/src/theme';
+
+const kakaoJsKey = process.env.EXPO_PUBLIC_KAKAO_JS_KEY;
 
 export default function PlaceDetailScreen() {
   const theme = useAppTheme();
@@ -155,12 +158,7 @@ export default function PlaceDetailScreen() {
       */}
       <Text style={styles.title}>{place.name}</Text>
       <Text style={styles.meta}>{place.meta}</Text>
-      <View style={styles.map}>
-        <Text style={styles.mapText}>지도</Text>
-        <Text style={styles.mapMeta}>
-          {place.latitude.toFixed(5)}, {place.longitude.toFixed(5)}
-        </Text>
-      </View>
+      <PlaceKakaoMap latitude={place.latitude} longitude={place.longitude} name={place.name} />
       <TouchableOpacity
         style={styles.outlineButton}
         onPress={() => openExternalMap(preferredMapProvider)}
@@ -212,6 +210,90 @@ export default function PlaceDetailScreen() {
   );
 }
 
+type PlaceKakaoMapProps = {
+  latitude: number;
+  longitude: number;
+  name: string;
+};
+
+function PlaceKakaoMap({ latitude, longitude, name }: PlaceKakaoMapProps) {
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
+
+  if (!kakaoJsKey) {
+    return (
+      <View style={styles.map}>
+        <Text style={styles.mapText}>Kakao 지도 설정 필요</Text>
+        <Text style={styles.mapMeta}>
+          {latitude.toFixed(5)}, {longitude.toFixed(5)}
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.map}>
+      <WebView
+        originWhitelist={['*']}
+        scrollEnabled={false}
+        source={{ html: createKakaoMapHtml({ kakaoJsKey, latitude, longitude, name }) }}
+        style={styles.webMap}
+      />
+    </View>
+  );
+}
+
+function createKakaoMapHtml({
+  kakaoJsKey,
+  latitude,
+  longitude,
+  name,
+}: PlaceKakaoMapProps & { kakaoJsKey: string }) {
+  return `
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      html, body, #map {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(kakaoJsKey)}&autoload=false"></script>
+    <script>
+      kakao.maps.load(function () {
+        var position = new kakao.maps.LatLng(${latitude}, ${longitude});
+        var map = new kakao.maps.Map(document.getElementById('map'), {
+          center: position,
+          level: 3
+        });
+        var marker = new kakao.maps.Marker({ position: position });
+        marker.setMap(map);
+        var infowindow = new kakao.maps.InfoWindow({
+          content: '<div style="padding:6px 10px;font-size:13px;font-weight:700;white-space:nowrap;">${escapeHtml(name)}</div>'
+        });
+        infowindow.open(map, marker);
+      });
+    </script>
+  </body>
+</html>`;
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: { backgroundColor: theme.semantic.background, flexGrow: 1, gap: 16, padding: 20 },
@@ -222,9 +304,11 @@ const createStyles = (theme: AppTheme) =>
       borderRadius: 8,
       height: 132,
       justifyContent: 'center',
+      overflow: 'hidden',
     },
     mapText: { color: theme.semantic.textSecondary, fontWeight: '800' },
     mapMeta: { color: theme.semantic.textMuted, marginTop: 8 },
+    webMap: { flex: 1, width: '100%' },
     title: { color: theme.semantic.text, fontSize: 28, fontWeight: '800' },
     meta: { color: theme.semantic.textMuted },
     row: { flexDirection: 'row', gap: 10 },

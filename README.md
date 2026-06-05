@@ -32,6 +32,74 @@ eas build --profile development --platform android
 npm run start:dev
 ```
 
+## Android Device Install Without EAS Queue
+
+Use this path when you want to install the app directly to a physical Android device over USB-C instead of waiting for an EAS cloud build queue.
+
+### 1. Prepare the device
+
+1. Enable **Developer options** on the Android device.
+2. Enable **USB debugging**.
+3. Connect the device to the computer with a USB-C cable.
+4. Accept the USB debugging prompt on the device.
+5. Check that the device is visible:
+
+```bash
+adb devices
+```
+
+The device should appear as `device`, not `unauthorized`.
+
+### 2. Install the dev build locally
+
+```bash
+nvm use
+npm install
+npx expo run:android
+```
+
+`npx expo run:android` creates or updates the native Android project locally, builds a debug APK, installs it to the connected device, and starts the app.
+
+If Metro is not running after install, start it separately:
+
+```bash
+npm run start:dev
+```
+
+### 3. Console setup for native auth
+
+Google OAuth and Kakao native login validate the installed app by package name plus the signing key used for that APK. A local USB install usually uses the Android debug keystore, so register the debug credentials in each console.
+
+Android package name:
+
+```text
+com.roundtriptime.roundtrip
+```
+
+Debug SHA-1 for Google OAuth:
+
+```bash
+keytool -list -v \
+  -keystore ~/.android/debug.keystore \
+  -alias androiddebugkey \
+  -storepass android \
+  -keypass android
+```
+
+Register that SHA-1 in the Google Cloud Android OAuth client with package name `com.roundtriptime.roundtrip`.
+
+Kakao key hash is also signing-key dependent. Generate/register the debug key hash in Kakao Developers for the same package name before testing Kakao native login.
+
+### 4. Maps note
+
+The current S-05 place detail map renders Kakao Maps through `react-native-webview` and the Kakao JavaScript SDK. It uses:
+
+```text
+EXPO_PUBLIC_KAKAO_JS_KEY
+```
+
+If the map area is blank on device, verify the Kakao JavaScript key and Web platform/domain restrictions in Kakao Developers.
+
 ## Commands
 
 | Command                | Purpose                         |
