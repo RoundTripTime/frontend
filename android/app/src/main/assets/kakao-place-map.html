@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+    />
+    <style>
+      html,
+      body,
+      #map {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background: #f2f4f6;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const appKey = params.get('appKey') || '';
+      const latitude = Number(params.get('lat'));
+      const longitude = Number(params.get('lng'));
+      const placeName = params.get('name') || 'place';
+
+      function postMessage(payload) {
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage(JSON.stringify(payload));
+        }
+      }
+
+      function fail(message) {
+        postMessage({ type: 'error', message });
+      }
+
+      function loadMap() {
+        if (!window.kakao || !window.kakao.maps) {
+          fail('Kakao Maps SDK가 초기화되지 않았습니다.');
+          return;
+        }
+
+        window.kakao.maps.load(function () {
+          const center = new window.kakao.maps.LatLng(latitude, longitude);
+          const map = new window.kakao.maps.Map(document.getElementById('map'), {
+            center,
+            level: 4,
+          });
+
+          new window.kakao.maps.Marker({
+            map,
+            position: center,
+            title: placeName,
+          });
+
+          window.setTimeout(function () {
+            map.relayout();
+          }, 100);
+
+          postMessage({ type: 'ready' });
+        });
+      }
+
+      if (!appKey) {
+        fail('Kakao JavaScript 키가 없습니다.');
+      } else if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        fail('장소 좌표가 올바르지 않습니다.');
+      } else {
+        const sdk = document.createElement('script');
+        sdk.src =
+          'https://dapi.kakao.com/v2/maps/sdk.js?autoload=false&appkey=' +
+          encodeURIComponent(appKey);
+        sdk.async = true;
+        sdk.onload = loadMap;
+        sdk.onerror = function () {
+          fail('Kakao Maps SDK 스크립트 로드에 실패했습니다.');
+        };
+        document.head.appendChild(sdk);
+      }
+    </script>
+  </body>
+</html>

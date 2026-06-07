@@ -45,6 +45,7 @@ const androidConfig: NonNullable<ExpoConfig['android']> & { usesCleartextTraffic
   },
   edgeToEdgeEnabled: true,
   predictiveBackGestureEnabled: false,
+  permissions: ['INTERNET'],
   usesCleartextTraffic: usesCleartextApiTraffic,
 };
 
@@ -76,6 +77,7 @@ const config: ExpoConfig = {
   },
   plugins: [
     'expo-router',
+    'expo-background-task',
     'expo-secure-store',
     'expo-video',
     'expo-font',
@@ -86,6 +88,7 @@ const config: ExpoConfig = {
       {
         android: {
           kotlinVersion: '2.1.20',
+          extraMavenRepos: ['https://devrepo.kakao.com/nexus/content/groups/public/'],
         },
       },
     ],
