@@ -90,7 +90,7 @@ Register that SHA-1 in the Google Cloud Android OAuth client with package name `
 
 Kakao key hash is also signing-key dependent. Generate/register the debug key hash in Kakao Developers for the same package name before testing Kakao native login.
 
-### 4. Maps note
+### 4. Kakao WebView map setup
 
 The current S-05 place detail map renders Kakao Maps through `react-native-webview` and the Kakao JavaScript SDK. It uses:
 
@@ -98,7 +98,23 @@ The current S-05 place detail map renders Kakao Maps through `react-native-webvi
 EXPO_PUBLIC_KAKAO_JS_KEY
 ```
 
-If the map area is blank on device, verify the Kakao JavaScript key and Web platform/domain restrictions in Kakao Developers.
+This WebView map path does **not** use Kakao Maps Native SDK. Developers do not need to register their personal Android debug key hash just to render the WebView map.
+
+For the WebView map, the Kakao Developers application must have:
+
+1. A valid **JavaScript key**.
+2. **Web platform** enabled.
+3. `file://` registered in **Web platform → Site domain**, because the current Android map HTML is loaded from `file:///android_asset/kakao-place-map.html`.
+
+Each developer only needs to copy the shared JavaScript key into their local `.env`:
+
+```bash
+EXPO_PUBLIC_KAKAO_JS_KEY=...
+```
+
+No per-developer Kakao map key hash is required while the map stays on the WebView / JavaScript SDK path. If the map area is blank on device, verify the JavaScript key, `file://` site domain registration, and device network access.
+
+Kakao native login is separate from the WebView map. Testing Kakao native login still requires the developer's Android debug key hash from step 3.
 
 ## Commands
 
