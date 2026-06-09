@@ -215,8 +215,15 @@ LIMIT 10;
 | place_id | UUID | FK([places.id](http://places.id)) |
 | day_index | integer | 여행 일차. null이면 미배치 풀 |
 | sort_order | integer | 해당 일차 내 순서. null이면 미배치 |
-| planned_duration_minutes | integer | 예상 체류 시간(분). nullable |
+| start_time | time | 방문 시작 시간. nullable |
+| end_time | time | 방문 종료 시간. nullable |
+| planned_duration_minutes | integer | `start_time`~`end_time` 기준 자동 계산된 체류 시간(분). nullable |
 | source_candidate_id | UUID | FK(place_[candidates.id](http://candidates.id)). nullable |
+
+> V11 마이그레이션에서 `itinerary_items.start_time`, `itinerary_items.end_time` 컬럼을 추가한다.
+> 장소 추가/수정 Request DTO는 `start_time`, `end_time`을 받을 수 있다.
+> 두 시간이 모두 지정되면 `planned_duration_minutes`는 서버가 자동 계산한다. 예: `09:00`~`11:00` → `120`, `14:00`~`15:30` → `90`.
+> 시간이 지정되지 않으면 `start_time`, `end_time`, `planned_duration_minutes`는 모두 `null`이다.
 
 ### community_posts
 

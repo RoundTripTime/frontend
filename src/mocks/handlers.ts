@@ -2,6 +2,7 @@ import {
   getSourceType,
   mockDb,
   nextMockId,
+  normalizeItineraryItemTime,
   page,
   toItineraryItem,
   toItineraryListItem,
@@ -539,9 +540,10 @@ export const handlers: MockHandler[] = [
     resolve: ({ body, params }) => {
       const payload = (body ?? {}) as {
         day_index?: number;
+        end_time?: string | null;
         place_id?: string;
-        planned_duration_minutes?: number;
         sort_order?: number;
+        start_time?: string | null;
       };
       const itinerary = mockDb.itineraries.find((item) => item.itinerary_id === params.itineraryId);
       const item = toItineraryItem(payload.place_id ?? mockDb.places[0]!.place_id, payload);
@@ -566,7 +568,7 @@ export const handlers: MockHandler[] = [
         );
       }
 
-      Object.assign(item, patch);
+      Object.assign(item, patch, normalizeItineraryItemTime(patch));
 
       return json(item);
     },
@@ -870,7 +872,7 @@ export const handlers: MockHandler[] = [
           return {
             ...place,
             thumbnail_url: place.thumbnail_url,
-            planned_duration_minutes: item.planned_duration_minutes ?? 90,
+            planned_duration_minutes: item.planned_duration_minutes,
             sort_order: item.sort_order ?? index + 1,
           };
         }),

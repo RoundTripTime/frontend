@@ -20,7 +20,10 @@ import {
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
 import { EmptyState } from '@/src/components/EmptyState';
 import { PlanListSkeleton } from '@/src/components/LoadingSkeleton';
-import { createPlaceCandidateCardViewModel } from '@/src/features/places/viewModel';
+import {
+  createPlaceCandidateCardViewModel,
+  hasResolvedCandidatePlace,
+} from '@/src/features/places/viewModel';
 import { queryClient } from '@/src/lib/queryClient';
 import { usePlaceCandidateStore } from '@/src/stores/placeCandidates';
 import { useAppTheme, type AppTheme } from '@/src/theme';
@@ -66,14 +69,23 @@ export default function RecentPlacesScreen() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const rawCandidates = candidatesQuery.data?.candidates ?? cachedCandidates;
   const candidates = rawCandidates.filter((candidate) => candidate.status === 'proposed');
+  const resolvedCandidates = candidates.filter(hasResolvedCandidatePlace);
+  const emptyCandidateTitle =
+    rawCandidates.length > 0 && candidates.length === 0
+      ? '모든 후보를 처리했어요'
+      : '추출된 장소가 없습니다';
+  const emptyCandidateDescription =
+    candidates.length > 0 && resolvedCandidates.length === 0
+      ? '장소를 찾지 못했거나 지도 장소로 확인되지 않았습니다.'
+      : '이 링크에서 추출된 장소가 없습니다.';
   const sourceLink = candidatesQuery.data?.source_link ?? cachedSourceLink;
   const sourceStatus = sourceLink?.status;
   const isAnalysisWaiting = sourceStatus === 'pending' || sourceStatus === 'processing';
   const analysisFailed = sourceStatus === 'failed';
   const wasWaitingRef = useRef(false);
   const candidateCards = useMemo(
-    () => candidates.map(createPlaceCandidateCardViewModel),
-    [candidates],
+    () => resolvedCandidates.map(createPlaceCandidateCardViewModel),
+    [resolvedCandidates],
   );
   const selectableIds = useMemo(
     () => candidateCards.map((candidate) => candidate.id),
@@ -183,12 +195,7 @@ export default function RecentPlacesScreen() {
           title="분석에 실패했습니다"
         />
       ) : candidateCards.length === 0 ? (
-        <EmptyState
-          description={
-            rawCandidates.length === 0 ? '이 링크에서 추출된 장소가 없습니다.' : undefined
-          }
-          title={rawCandidates.length === 0 ? '추출된 장소가 없습니다' : '모든 후보를 처리했어요'}
-        />
+        <EmptyState description={emptyCandidateDescription} title={emptyCandidateTitle} />
       ) : (
         candidateCards.map((candidate) => (
           <Pressable

@@ -20,14 +20,20 @@ export function useShareReceiveController() {
   const [message, setMessage] = useState('');
   const activeJobId = usePlaceCandidateStore((state) => state.jobId);
   const activeSourceLink = usePlaceCandidateStore((state) => state.sourceLink);
+  const setActiveJob = usePlaceCandidateStore((state) => state.setActiveJob);
   const setAnalysisResult = usePlaceCandidateStore((state) => state.setAnalysisResult);
   const autoSubmittedRef = useRef(false);
 
   const createAnalysisJob = async (sharedUrl: string) => {
     const submitted = await submitSourceLink({ url: sharedUrl });
-    const candidates = await listJobCandidates(submitted.job_id);
+    setActiveJob(submitted.job_id, sharedUrl);
 
-    setAnalysisResult(candidates, submitted.job_id);
+    try {
+      const candidates = await listJobCandidates(submitted.job_id);
+      setAnalysisResult(candidates, submitted.job_id);
+    } catch {
+      // Job creation already succeeded. The root extraction watcher continues polling.
+    }
   };
 
   const submitUrl = async (sharedUrl = url) => {

@@ -28,6 +28,10 @@ export type PlaceCandidateCardViewModel = {
   thumbnailUrl?: string;
 };
 
+export type ResolvedPlaceCandidate = PlaceCandidate & {
+  place: NonNullable<PlaceCandidate['place']>;
+};
+
 export type PlaceDetailViewModel = {
   id: string;
   name: string;
@@ -89,8 +93,14 @@ export function getPlaceCountryLabel(countryCode: string) {
   return getCountryLabel(countryCode);
 }
 
-export function createPlaceCandidateCardViewModel(
+export function hasResolvedCandidatePlace(
   candidate: PlaceCandidate,
+): candidate is ResolvedPlaceCandidate {
+  return Boolean(candidate.place);
+}
+
+export function createPlaceCandidateCardViewModel(
+  candidate: ResolvedPlaceCandidate,
 ): PlaceCandidateCardViewModel {
   return {
     id: candidate.candidate_id,

@@ -1,6 +1,7 @@
 import { Image, type ImageSource } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { VideoView, useVideoPlayer, type VideoSource } from 'expo-video';
+import { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
@@ -29,11 +30,20 @@ export default function OnboardingScreen() {
   const login = useAuthStore((state) => state.login);
   const status = useAuthStore((state) => state.status);
   const errorMessage = useAuthStore((state) => state.errorMessage);
+  const [pendingProvider, setPendingProvider] = useState<'google' | 'kakao' | null>(null);
   const isLoading = status === 'checking';
 
   const handleLogin = async (provider: 'google' | 'kakao') => {
-    await login(provider);
-    router.replace('/');
+    setPendingProvider(provider);
+
+    try {
+      await login(provider);
+      router.replace('/');
+    } catch {
+      // The auth store exposes the user-facing error message.
+    } finally {
+      setPendingProvider(null);
+    }
   };
 
   return (
@@ -64,7 +74,9 @@ export default function OnboardingScreen() {
               void handleLogin('google');
             }}
           >
-            <Text style={styles.primaryButtonText}>Google로 시작하기</Text>
+            <Text style={styles.primaryButtonText}>
+              {pendingProvider === 'google' ? 'Google 로그인 중...' : 'Google로 시작하기'}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             disabled={isLoading}
@@ -73,7 +85,9 @@ export default function OnboardingScreen() {
               void handleLogin('kakao');
             }}
           >
-            <Text style={styles.secondaryButtonText}>Kakao로 시작하기</Text>
+            <Text style={styles.secondaryButtonText}>
+              {pendingProvider === 'kakao' ? 'Kakao 로그인 중...' : 'Kakao로 시작하기'}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>

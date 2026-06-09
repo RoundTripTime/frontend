@@ -138,6 +138,14 @@ function toAuthUser(user: UserProfile): AuthUser {
   };
 }
 
+function getAuthErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return '로그인에 실패했습니다.';
+}
+
 export function installAuthInterceptors() {
   if (interceptorsInstalled) {
     return;
@@ -227,7 +235,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (error) {
       set({
         status: 'unauthenticated',
-        errorMessage: error instanceof Error ? error.message : '로그인에 실패했습니다.',
+        errorMessage: getAuthErrorMessage(error),
       });
       throw error;
     }

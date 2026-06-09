@@ -1,5 +1,9 @@
 import { create } from 'zustand';
 
+import {
+  clearStoredExtractionJob,
+  setStoredExtractionJob,
+} from '@/src/features/extraction/activeExtractionJobStorage';
 import { isDevelopmentMode } from '@/src/lib/appMode';
 import { mockPlaces } from '@/src/mocks/fixtures';
 
@@ -13,6 +17,8 @@ type PlaceCandidateState = {
   acceptCandidates: (candidateIds: string[]) => void;
   rejectCandidate: (candidateId: string) => void;
   removeCandidates: (candidateIds: string[]) => void;
+  hydrateActiveJob: (jobId: string) => void;
+  setActiveJob: (jobId: string, sourceUrl?: string) => void;
   setAnalysisResult: (result: PlaceCandidatesResponse, jobId?: string) => void;
 };
 
@@ -90,10 +96,43 @@ export const usePlaceCandidateStore = create<PlaceCandidateState>((set) => ({
       ),
     }));
   },
+  hydrateActiveJob: (jobId) => {
+    set((state) => ({
+      jobId: state.jobId ?? jobId,
+    }));
+  },
+  setActiveJob: (jobId, sourceUrl) => {
+    void setStoredExtractionJob({ jobId, sourceUrl });
+    set({
+      candidates: [],
+      jobId,
+      sourceLink: sourceUrl
+        ? {
+            thumbnail_url: null,
+            title: null,
+            url: sourceUrl,
+          }
+        : null,
+    });
+  },
   setAnalysisResult: (result, jobId) => {
+    const nextJobId = jobId;
+    const status = result.source_link.status;
+
+    if (nextJobId) {
+      if (status === 'done' || status === 'failed') {
+        void clearStoredExtractionJob();
+      } else {
+        void setStoredExtractionJob({
+          jobId: nextJobId,
+          sourceUrl: result.source_link.url,
+        });
+      }
+    }
+
     set((state) => ({
       candidates: result.candidates,
-      jobId: jobId ?? state.jobId,
+      jobId: nextJobId ?? state.jobId,
       sourceLink: result.source_link,
     }));
   },

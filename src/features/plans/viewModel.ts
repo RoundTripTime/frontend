@@ -20,8 +20,10 @@ export type PlanPlaceViewModel = {
   dayIndex: number | null;
   dayLabel: string;
   sortOrder: number | null;
+  startTime: string | null;
+  endTime: string | null;
   plannedDurationMinutes: number | null;
-  durationLabel: string;
+  timeLabel: string;
   markerTone: 'day' | 'unassigned';
 };
 
@@ -54,12 +56,8 @@ function formatDateRange(startDate: string, endDate: string) {
   return `${startDate.replaceAll('-', '.')} ~ ${endDate.replaceAll('-', '.')}`;
 }
 
-function formatDuration(minutes: number | null) {
-  if (!minutes) {
-    return '체류 시간 미정';
-  }
-
-  return `예상 체류 ${minutes}분`;
+function hasScheduledTime(item: ItineraryItem) {
+  return item.day_index !== null && item.start_time !== null && item.end_time !== null;
 }
 
 function sortItems(a: PlanPlaceViewModel, b: PlanPlaceViewModel) {
@@ -67,6 +65,10 @@ function sortItems(a: PlanPlaceViewModel, b: PlanPlaceViewModel) {
 }
 
 function toPlanPlaceViewModel(item: ItineraryItem): PlanPlaceViewModel {
+  const isScheduled = hasScheduledTime(item);
+  const dayIndex = isScheduled ? item.day_index : null;
+  const sortOrder = isScheduled ? item.sort_order : null;
+
   return {
     itemId: item.item_id,
     placeId: item.place_id,
@@ -74,12 +76,14 @@ function toPlanPlaceViewModel(item: ItineraryItem): PlanPlaceViewModel {
     category: '장소',
     latitude: item.latitude,
     longitude: item.longitude,
-    dayIndex: item.day_index,
-    dayLabel: item.day_index ? `Day ${item.day_index}` : '미배치',
-    sortOrder: item.sort_order,
+    dayIndex,
+    dayLabel: dayIndex ? `Day ${dayIndex}` : '미배치',
+    sortOrder,
+    startTime: item.start_time,
+    endTime: item.end_time,
     plannedDurationMinutes: item.planned_duration_minutes,
-    durationLabel: formatDuration(item.planned_duration_minutes),
-    markerTone: item.day_index ? 'day' : 'unassigned',
+    timeLabel: isScheduled ? `${item.start_time} - ${item.end_time}` : '미배치',
+    markerTone: dayIndex ? 'day' : 'unassigned',
   };
 }
 

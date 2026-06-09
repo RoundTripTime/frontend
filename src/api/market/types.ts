@@ -50,7 +50,7 @@ export type MarketPlan = Omit<
     day_index: number;
     items: (PlaceSummary & {
       thumbnail_url: string;
-      planned_duration_minutes: number;
+      planned_duration_minutes: number | null;
       sort_order: number;
     })[];
   }[];

@@ -27,6 +27,8 @@ export type ItineraryItem = {
   longitude: number;
   day_index: number | null;
   sort_order: number | null;
+  start_time: string | null;
+  end_time: string | null;
   planned_duration_minutes: number | null;
 };
 
@@ -55,14 +57,16 @@ export type UpdateItineraryRequest = Partial<
 export type CreateItineraryItemRequest = {
   place_id: ID;
   day_index?: number;
+  end_time?: string | null;
   sort_order?: number;
-  planned_duration_minutes?: number;
+  start_time?: string | null;
 };
 
 export type UpdateItineraryItemRequest = {
   day_index?: number | null;
+  end_time?: string | null;
   sort_order?: number | null;
-  planned_duration_minutes?: number | null;
+  start_time?: string | null;
 };
 
 export type ReorderItineraryItemsRequest = {

@@ -26,14 +26,11 @@ import { DevScreenHeader } from '@/src/components/DevScreenHeader';
 import {
   applyScheduleToRows,
   buildScheduleRows,
-  DURATION_OPTIONS,
-  getDurationMinutes,
   getRowTimeLabels,
   getSchedulePatches,
-  updateRowsDuration,
   type ScheduleRow,
 } from '@/src/features/plans/scheduleModel';
-import { createPlanDetailViewModel, type PlanPlaceViewModel } from '@/src/features/plans/viewModel';
+import { createPlanDetailViewModel } from '@/src/features/plans/viewModel';
 import { useAppTheme, type AppTheme } from '@/src/theme';
 
 import type { Itinerary } from '@/src/api/itineraries/types';
@@ -154,10 +151,6 @@ export default function PlanEditScreen() {
     setRows(nextRows);
   }, []);
 
-  const setDuration = (item: PlanPlaceViewModel, minutes: number) => {
-    setRows((currentRows) => updateRowsDuration(currentRows, item.itemId, minutes));
-  };
-
   return (
     <View style={styles.screen}>
       <PlanDetailHeader
@@ -190,12 +183,7 @@ export default function PlanEditScreen() {
               keyExtractor={(item) => item.id}
               onDragEnd={handleDragEnd}
               renderItem={(params) => (
-                <ScheduleRowItem
-                  {...params}
-                  onDurationChange={setDuration}
-                  styles={styles}
-                  timeLabels={timeLabels}
-                />
+                <ScheduleRowItem {...params} styles={styles} timeLabels={timeLabels} />
               )}
             />
           </View>
@@ -238,7 +226,7 @@ function PlanDetailHeader({
       <DevScreenHeader screenName="플랜 상세 / 편집" screenNumber="S-07" />
       {/*
         화면: 플랜 상세 / 편집 (S-07)
-        기능: 여행 정보, 날짜별 장소 배치, 체류 시간 설정, 미배치 장소 풀, 지도, 공유, OTA 예약, 저장 액션을 제공한다.
+        기능: 여행 정보, 날짜별 장소 배치, 미배치 장소 풀, 지도, 공유, OTA 예약, 저장 액션을 제공한다.
         가능한 다음 이동 화면: S-05, S-07-M, S-08, S-09
       */}
       {queryFailed ? <Text style={styles.place}>플랜 정보를 불러오지 못했습니다.</Text> : null}
@@ -305,11 +293,9 @@ function ScheduleRowItem({
   drag,
   isActive,
   item,
-  onDurationChange,
   styles,
   timeLabels,
 }: RenderItemParams<ScheduleRow> & {
-  onDurationChange: (item: PlanPlaceViewModel, minutes: number) => void;
   styles: ReturnType<typeof createStyles>;
   timeLabels: Map<string, string>;
 }) {
@@ -332,7 +318,6 @@ function ScheduleRowItem({
     );
   }
 
-  const duration = getDurationMinutes(item.item);
   const timeLabel = timeLabels.get(item.item.itemId) ?? '미배치';
 
   return (
@@ -350,21 +335,6 @@ function ScheduleRowItem({
           </View>
           <Text style={styles.dragHandleText}>길게 눌러 이동</Text>
         </View>
-        <View style={styles.durationRow}>
-          {DURATION_OPTIONS.map((minutes) => (
-            <TouchableOpacity
-              key={minutes}
-              style={[styles.durationChip, duration === minutes && styles.activeDurationChip]}
-              onPress={() => onDurationChange(item.item, minutes)}
-            >
-              <Text
-                style={[styles.durationText, duration === minutes && styles.activeDurationText]}
-              >
-                {minutes}분
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
       </TouchableOpacity>
     </ScaleDecorator>
   );
@@ -372,8 +342,6 @@ function ScheduleRowItem({
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    activeDurationChip: { backgroundColor: theme.semantic.primary },
-    activeDurationText: { color: theme.semantic.onPrimary },
     activeSchedulePlaceCard: {
       backgroundColor: theme.semantic.primarySoft,
       borderColor: theme.semantic.primary,
@@ -394,14 +362,6 @@ const createStyles = (theme: AppTheme) =>
     dayHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
     dragHandleText: { color: theme.semantic.textSecondary, fontSize: 12, fontWeight: '900' },
     draggableHeader: { alignItems: 'flex-start', flexDirection: 'row', gap: 10 },
-    durationChip: {
-      backgroundColor: theme.semantic.surfaceMuted,
-      borderRadius: 14,
-      paddingHorizontal: 10,
-      paddingVertical: 6,
-    },
-    durationRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-    durationText: { color: theme.semantic.textSecondary, fontSize: 12, fontWeight: '800' },
     footerContent: { gap: 14, paddingTop: 2 },
     headerContent: { gap: 10 },
     listShell: { flex: 1, minHeight: 240 },

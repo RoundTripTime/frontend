@@ -13,10 +13,12 @@ export type PlaceCandidate = {
   requires_confirmation: boolean;
   status: CandidateStatus;
   evidence: string;
-  place: PlaceSummary & {
-    google_place_id: string;
-    kakao_place_id: string;
-  };
+  place:
+    | (PlaceSummary & {
+        google_place_id: string;
+        kakao_place_id: string;
+      })
+    | null;
 };
 
 export type PlaceCandidatesResponse = {

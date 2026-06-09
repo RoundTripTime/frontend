@@ -71,6 +71,51 @@ export function getSourceType(url: string) {
   return 'youtube_short';
 }
 
+function parseClockMinutes(value: string) {
+  const [hours, minutes] = value.split(':').map(Number);
+
+  if (
+    hours === undefined ||
+    minutes === undefined ||
+    Number.isNaN(hours) ||
+    Number.isNaN(minutes)
+  ) {
+    return null;
+  }
+
+  return hours * 60 + minutes;
+}
+
+export function getPlannedDurationMinutes(startTime?: string | null, endTime?: string | null) {
+  if (!startTime || !endTime) {
+    return null;
+  }
+
+  const startMinutes = parseClockMinutes(startTime);
+  const endMinutes = parseClockMinutes(endTime);
+
+  if (startMinutes === null || endMinutes === null || endMinutes <= startMinutes) {
+    return null;
+  }
+
+  return endMinutes - startMinutes;
+}
+
+export function normalizeItineraryItemTime(
+  patch: Partial<Pick<ItineraryItem, 'end_time' | 'planned_duration_minutes' | 'start_time'>>,
+) {
+  const startTime = patch.start_time ?? null;
+  const endTime = patch.end_time ?? null;
+  const plannedDurationMinutes = getPlannedDurationMinutes(startTime, endTime);
+
+  return {
+    ...patch,
+    end_time: plannedDurationMinutes === null ? null : endTime,
+    planned_duration_minutes: plannedDurationMinutes,
+    start_time: plannedDurationMinutes === null ? null : startTime,
+  };
+}
+
 export function toItineraryListItem(itinerary: Itinerary): ItineraryListItem {
   return {
     itinerary_id: itinerary.itinerary_id,
@@ -100,7 +145,11 @@ export function toItineraryItem(
     longitude: place.longitude,
     day_index: patch.day_index ?? null,
     sort_order: patch.sort_order ?? null,
-    planned_duration_minutes: patch.planned_duration_minutes ?? null,
+    ...normalizeItineraryItemTime({
+      end_time: patch.end_time ?? null,
+      planned_duration_minutes: patch.planned_duration_minutes ?? null,
+      start_time: patch.start_time ?? null,
+    }),
   };
 }
 
@@ -271,7 +320,7 @@ const marketPlanDetails: MarketPlan[] = [
               longitude: item.longitude,
               thumbnail_url:
                 place?.thumbnail_url ?? 'https://cdn.example.com/places/placeholder.jpg',
-              planned_duration_minutes: item.planned_duration_minutes ?? 90,
+              planned_duration_minutes: item.planned_duration_minutes,
               sort_order: item.sort_order ?? 1,
             };
           }),

@@ -7,10 +7,12 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
+import '@/src/features/extraction/backgroundTask';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { DevScreenOverlay } from '@/src/components/DevScreenOverlay';
 import { ErrorBoundary } from '@/src/components/ErrorBoundary';
+import { ExtractionJobWatcher } from '@/src/features/extraction/ExtractionJobWatcher';
 import { installGlobalHandlers } from '@/src/lib/globalHandlers';
 import { queryClient } from '@/src/lib/queryClient';
 import { installAuthInterceptors, useAuthStore } from '@/src/stores/auth';
@@ -51,6 +53,7 @@ export default function RootLayout() {
             <ThemeProvider value={navigationTheme}>
               <QueryClientProvider client={queryClient}>
                 <AuthGate />
+                <ExtractionJobWatcher />
                 <StatusBar style={appTheme.colorScheme === 'dark' ? 'dark' : 'auto'} />
                 <DevScreenOverlay />
               </QueryClientProvider>
