@@ -12,10 +12,6 @@
 - `community`: 커뮤니티와 플랜 마켓
 - `settings`: 설정 하위 stack
 
-## 화면 번호
-
-개발 모드에서는 `DevScreenOverlay`가 현재 화면 번호와 이름을 표시한다. 화면 번호는 `docs/TDD/Screen Specs.md`와 `docs/TDD/Screen Flow.md`를 기준으로 맞춘다.
-
 ## 구현 원칙
 
 - 화면 파일에는 route params, 화면 상태, 렌더링 조립만 둔다.

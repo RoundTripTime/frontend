@@ -4,8 +4,8 @@
 
 ## 모드별 정책
 
-- `development`: mock ON, DevScreenOverlay ON
-- `preview`: mock ON, DevScreenOverlay OFF
+- `development`: mock ON
+- `preview`: mock ON
 - `production`: mock OFF
 
 정책은 `app.config.ts`의 `APP_ENV_MODES`에서 관리한다.

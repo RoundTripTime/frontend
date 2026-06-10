@@ -5,15 +5,11 @@ export type AppEnv = 'development' | 'preview' | 'production';
 type RuntimeAppMode = {
   appEnv?: AppEnv;
   apiBaseUrl?: string;
-  showDevScreenHeader?: boolean;
   useApiMocks?: boolean;
 };
 
-const DEFAULT_APP_MODE: Required<
-  Pick<RuntimeAppMode, 'appEnv' | 'showDevScreenHeader' | 'useApiMocks'>
-> = {
+const DEFAULT_APP_MODE: Required<Pick<RuntimeAppMode, 'appEnv' | 'useApiMocks'>> = {
   appEnv: 'development',
-  showDevScreenHeader: true,
   useApiMocks: true,
 };
 
@@ -27,7 +23,6 @@ export const appMode = {
 };
 
 export const currentAppEnv = appMode.appEnv;
-export const shouldShowDevScreenHeader = appMode.showDevScreenHeader === true;
 export const useApiMocksEnabled = appMode.useApiMocks === true;
 export const isDevelopmentMode = currentAppEnv === 'development';
 export const isProductionMode = currentAppEnv === 'production';

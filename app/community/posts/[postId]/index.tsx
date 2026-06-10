@@ -11,7 +11,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   communityKeys,
@@ -22,7 +21,7 @@ import {
 } from '@/src/api/community/hooks';
 import { Avatar } from '@/src/components/Avatar';
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
-import { RefreshableScrollView } from '@/src/components/RefreshableScrollView';
+import { ScreenFooter, ScreenRoot, ScreenScroll } from '@/src/components/layout';
 import { queryClient } from '@/src/lib/queryClient';
 import { useAuthStore } from '@/src/stores/auth';
 import { useAppTheme, type AppTheme } from '@/src/theme';
@@ -32,7 +31,6 @@ import type { CommunityComment } from '@/src/api/community/types';
 export default function CommunityPostDetailScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
-  const insets = useSafeAreaInsets();
   const { postId } = useLocalSearchParams<{ postId: string }>();
   const postQuery = useCommunityPostQuery(postId ?? '');
   const commentsQuery = useCommunityCommentsQuery(postId ?? '');
@@ -121,10 +119,10 @@ export default function CommunityPostDetailScreen() {
       keyboardVerticalOffset={0}
       style={styles.root}
     >
-      <View style={styles.root}>
-        <RefreshableScrollView
+      <ScreenRoot>
+        <ScreenScroll
           contentContainerStyle={styles.container}
-          style={styles.scroll}
+          insetSpacing={theme.spacing.xl}
           onRefresh={() => Promise.all([postQuery.refetch(), commentsQuery.refetch()])}
         >
           <DevScreenHeader screenName="커뮤니티 포스트 상세" screenNumber="S-11A" />
@@ -186,8 +184,8 @@ export default function CommunityPostDetailScreen() {
           {!commentsQuery.isLoading && comments.length === 0 ? (
             <Text style={styles.meta}>아직 댓글이 없습니다.</Text>
           ) : null}
-        </RefreshableScrollView>
-        <View style={[styles.commentComposer, { paddingBottom: Math.max(16, insets.bottom + 8) }]}>
+        </ScreenScroll>
+        <ScreenFooter insetSpacing={theme.spacing.md} style={styles.commentComposer}>
           <TextInput
             multiline
             onChangeText={setCommentContent}
@@ -207,8 +205,8 @@ export default function CommunityPostDetailScreen() {
               {createCommentMutation.isPending ? '등록 중' : '등록'}
             </Text>
           </TouchableOpacity>
-        </View>
-      </View>
+        </ScreenFooter>
+      </ScreenRoot>
     </KeyboardAvoidingView>
   );
 }

@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, type Href } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { userKeys, useMeQuery, useUpdateMeMutation } from '@/src/api/users/hooks';
 import { Avatar } from '@/src/components/Avatar';
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { ScreenBody, ScreenHeader, ScreenRoot, ScreenScroll } from '@/src/components/layout';
 import { queryClient } from '@/src/lib/queryClient';
 import { useAuthStore } from '@/src/stores/auth';
 import { useAppTheme, type AppTheme } from '@/src/theme';
@@ -48,133 +49,147 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <DevScreenHeader screenName="설정" screenNumber="S-12" />
-      {/*
-        화면: 설정 (S-12)
-        기능: 프로필, 계정 정보, 알림, 지도 공급자, 로그아웃과 계정 삭제 설정을 관리한다.
-        가능한 다음 이동 화면: S-12-P
-      */}
-      <Text style={styles.title}>설정</Text>
-      <TouchableOpacity
-        activeOpacity={0.84}
-        style={styles.profile}
-        onPress={() => {
-          router.push('/settings/profile' as Href);
-        }}
+    <ScreenRoot>
+      <ScreenScroll
+        applyBottomInset
+        contentContainerStyle={styles.container}
+        insetSpacing={theme.spacing.xxl}
       >
-        <Avatar size={56} uri={user?.avatar_url} />
-        <View style={styles.profileText}>
-          <Text style={styles.nickname}>{user?.nickname ?? '이상한 여우 8237'}</Text>
-          <Text style={styles.email}>{user?.email ?? 'user@example.com'}</Text>
-        </View>
-        <Ionicons color={theme.semantic.textMuted} name="chevron-forward" size={20} />
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.row}>
-        <Text style={styles.rowText}>알림 설정</Text>
-      </TouchableOpacity>
-      <View style={styles.selectRow}>
-        <Text style={styles.settingLabel}>지도 공급자</Text>
-        <View style={styles.selectWrap}>
+        <ScreenHeader
+          meta={<DevScreenHeader screenName="설정" screenNumber="S-12" />}
+          title="설정"
+        />
+        {/*
+          화면: 설정 (S-12)
+          기능: 프로필, 계정 정보, 알림, 지도 공급자, 로그아웃과 계정 삭제 설정을 관리한다.
+          가능한 다음 이동 화면: S-12-P
+        */}
+        <ScreenBody style={styles.body}>
           <TouchableOpacity
             activeOpacity={0.84}
-            disabled={updateMeMutation.isPending}
-            style={styles.selectButton}
+            style={styles.profile}
             onPress={() => {
-              setMapSelectOpen((current) => !current);
+              router.push('/settings/profile' as Href);
             }}
           >
-            <Text style={styles.selectText}>{selectedMapProviderLabel}</Text>
-            <Ionicons
-              color={theme.semantic.textMuted}
-              name={mapSelectOpen ? 'chevron-up' : 'chevron-down'}
-              size={16}
-            />
-          </TouchableOpacity>
-          {mapSelectOpen ? (
-            <View style={styles.selectMenu}>
-              {mapProviderOptions.map((option) => (
-                <TouchableOpacity
-                  key={option.value}
-                  disabled={updateMeMutation.isPending}
-                  style={styles.selectOption}
-                  onPress={() => {
-                    void updateMapProvider(option.value);
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.selectOptionText,
-                      selectedMapProvider === option.value && styles.selectedOptionText,
-                    ]}
-                  >
-                    {option.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+            <Avatar size={56} uri={user?.avatar_url} />
+            <View style={styles.profileText}>
+              <Text style={styles.nickname}>{user?.nickname ?? '이상한 여우 8237'}</Text>
+              <Text style={styles.email}>{user?.email ?? 'user@example.com'}</Text>
             </View>
-          ) : null}
-        </View>
-      </View>
-      <TouchableOpacity
-        style={styles.row}
-        onPress={() => {
-          void logout();
-        }}
-      >
-        <Text style={styles.rowText}>로그아웃</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.row}
-        onPress={() => {
-          void deleteAccount();
-        }}
-      >
-        <Text style={styles.dangerText}>계정 삭제</Text>
-      </TouchableOpacity>
-    </ScrollView>
+            <Ionicons color={theme.semantic.textMuted} name="chevron-forward" size={20} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.row}>
+            <Text style={styles.rowText}>알림 설정</Text>
+          </TouchableOpacity>
+          <View style={styles.selectRow}>
+            <Text style={styles.settingLabel}>지도 공급자</Text>
+            <View style={styles.selectWrap}>
+              <TouchableOpacity
+                activeOpacity={0.84}
+                disabled={updateMeMutation.isPending}
+                style={styles.selectButton}
+                onPress={() => {
+                  setMapSelectOpen((current) => !current);
+                }}
+              >
+                <Text style={styles.selectText}>{selectedMapProviderLabel}</Text>
+                <Ionicons
+                  color={theme.semantic.textMuted}
+                  name={mapSelectOpen ? 'chevron-up' : 'chevron-down'}
+                  size={16}
+                />
+              </TouchableOpacity>
+              {mapSelectOpen ? (
+                <View style={styles.selectMenu}>
+                  {mapProviderOptions.map((option) => (
+                    <TouchableOpacity
+                      key={option.value}
+                      disabled={updateMeMutation.isPending}
+                      style={styles.selectOption}
+                      onPress={() => {
+                        void updateMapProvider(option.value);
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.selectOptionText,
+                          selectedMapProvider === option.value && styles.selectedOptionText,
+                        ]}
+                      >
+                        {option.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ) : null}
+            </View>
+          </View>
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => {
+              void logout();
+            }}
+          >
+            <Text style={styles.rowText}>로그아웃</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => {
+              void deleteAccount();
+            }}
+          >
+            <Text style={styles.dangerText}>계정 삭제</Text>
+          </TouchableOpacity>
+        </ScreenBody>
+      </ScreenScroll>
+    </ScreenRoot>
   );
 }
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    container: { backgroundColor: theme.semantic.background, gap: 12, padding: 20 },
-    title: { color: theme.semantic.text, fontSize: 34, fontWeight: '900' },
+    container: { gap: theme.spacing.md, padding: theme.spacing.lg },
+    body: { gap: theme.spacing.md },
     profile: {
       alignItems: 'center',
       backgroundColor: theme.semantic.surface,
-      borderRadius: 8,
+      borderRadius: theme.radius.md,
       flexDirection: 'row',
-      gap: 14,
+      gap: theme.spacing.md,
       justifyContent: 'space-between',
-      padding: 16,
+      padding: theme.spacing.lg,
       width: '100%',
     },
-    profileText: { flex: 1, gap: 4 },
+    profileText: { flex: 1, gap: theme.spacing.xs },
     nickname: { color: theme.semantic.text, fontSize: 18, fontWeight: '800' },
     email: { color: theme.semantic.textMuted },
-    row: { backgroundColor: theme.semantic.surface, borderRadius: 8, padding: 16 },
+    row: {
+      backgroundColor: theme.semantic.surface,
+      borderRadius: theme.radius.md,
+      padding: theme.spacing.lg,
+    },
     rowText: { color: theme.semantic.text, fontWeight: '700' },
     dangerText: { color: theme.semantic.danger, fontWeight: '800' },
     selectButton: {
       alignItems: 'center',
       borderColor: theme.semantic.borderStrong,
-      borderRadius: 8,
+      borderRadius: theme.radius.md,
       borderWidth: 1,
       flexDirection: 'row',
-      gap: 8,
+      gap: theme.spacing.sm,
       justifyContent: 'space-between',
       minWidth: 132,
-      paddingHorizontal: 12,
-      paddingVertical: 9,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
     },
     selectedOptionText: { color: theme.semantic.primary, fontWeight: '900' },
     selectMenu: {
       backgroundColor: theme.semantic.surface,
       borderColor: theme.semantic.border,
-      borderRadius: 6,
+      borderRadius: theme.radius.sm,
       borderWidth: 1,
-      marginTop: 6,
+      marginTop: theme.spacing.xs,
       overflow: 'hidden',
       position: 'absolute',
       right: 0,
@@ -182,15 +197,15 @@ const createStyles = (theme: AppTheme) =>
       width: 132,
       zIndex: 2,
     },
-    selectOption: { paddingHorizontal: 12, paddingVertical: 10 },
+    selectOption: { paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.sm },
     selectOptionText: { color: theme.semantic.textSecondary, fontWeight: '800' },
     selectRow: {
       alignItems: 'center',
       backgroundColor: theme.semantic.surface,
-      borderRadius: 8,
+      borderRadius: theme.radius.md,
       flexDirection: 'row',
       justifyContent: 'space-between',
-      padding: 16,
+      padding: theme.spacing.lg,
     },
     selectText: { color: theme.semantic.text, fontWeight: '800' },
     selectWrap: {

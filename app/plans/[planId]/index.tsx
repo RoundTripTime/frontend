@@ -23,6 +23,7 @@ import {
   useUpdateItineraryItemMutation,
 } from '@/src/api/itineraries/hooks';
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { ScreenBody, ScreenFooter, ScreenRoot } from '@/src/components/layout';
 import {
   applyScheduleToRows,
   buildScheduleRows,
@@ -152,7 +153,7 @@ export default function PlanEditScreen() {
   }, []);
 
   return (
-    <View style={styles.screen}>
+    <ScreenRoot style={styles.screen}>
       <PlanDetailHeader
         plan={plan}
         styles={styles}
@@ -172,7 +173,7 @@ export default function PlanEditScreen() {
       ) : null}
       {plan ? (
         <>
-          <View style={styles.listShell}>
+          <ScreenBody style={styles.listShell}>
             <DraggableFlatList
               activationDistance={12}
               autoscrollSpeed={90}
@@ -186,17 +187,19 @@ export default function PlanEditScreen() {
                 <ScheduleRowItem {...params} styles={styles} timeLabels={timeLabels} />
               )}
             />
-          </View>
-          <PlanDetailFooter
-            isSaving={savingRows || updatePlanMutation.isPending || updateItemMutation.isPending}
-            onSave={() => {
-              void saveRows();
-            }}
-            styles={styles}
-          />
+          </ScreenBody>
+          <ScreenFooter insetSpacing={theme.spacing.md} style={styles.footerHost}>
+            <PlanDetailFooter
+              isSaving={savingRows || updatePlanMutation.isPending || updateItemMutation.isPending}
+              onSave={() => {
+                void saveRows();
+              }}
+              styles={styles}
+            />
+          </ScreenFooter>
         </>
       ) : null}
-    </View>
+    </ScreenRoot>
   );
 }
 
@@ -362,9 +365,10 @@ const createStyles = (theme: AppTheme) =>
     dayHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
     dragHandleText: { color: theme.semantic.textSecondary, fontSize: 12, fontWeight: '900' },
     draggableHeader: { alignItems: 'flex-start', flexDirection: 'row', gap: 10 },
-    footerContent: { gap: 14, paddingTop: 2 },
+    footerContent: { gap: theme.spacing.md },
+    footerHost: { borderTopColor: theme.semantic.border, borderTopWidth: 1 },
     headerContent: { gap: 10 },
-    listShell: { flex: 1, minHeight: 240 },
+    listShell: { flex: 1, minHeight: 0 },
     loadingState: { alignItems: 'center', gap: 10, padding: 24 },
     meta: { color: theme.semantic.textMuted },
     place: { color: theme.semantic.textSecondary },
@@ -380,8 +384,8 @@ const createStyles = (theme: AppTheme) =>
       padding: 12,
     },
     scheduleList: { flex: 1 },
-    scheduleListContent: { gap: 14, paddingVertical: 2 },
-    screen: { backgroundColor: theme.semantic.background, flex: 1, gap: 14, padding: 20 },
+    scheduleListContent: { gap: 14, paddingBottom: theme.spacing.md, paddingTop: 2 },
+    screen: { gap: 14, paddingHorizontal: 20, paddingTop: 20 },
     section: { backgroundColor: theme.semantic.surface, borderRadius: 8, gap: 10, padding: 14 },
     sectionTitle: { color: theme.semantic.text, fontSize: 17, fontWeight: '800' },
     title: { color: theme.semantic.text, fontSize: 28, fontWeight: '800' },

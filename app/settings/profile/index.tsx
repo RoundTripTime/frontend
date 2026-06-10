@@ -5,17 +5,17 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   StyleSheet,
+  Text,
   TextInput,
   TouchableOpacity,
-  Text,
   View,
 } from 'react-native';
 
 import { userKeys, useUpdateMeMutation } from '@/src/api/users/hooks';
 import { Avatar } from '@/src/components/Avatar';
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { ScreenHeader, ScreenRoot, ScreenScroll } from '@/src/components/layout';
 import { queryClient } from '@/src/lib/queryClient';
 import { useAuthStore } from '@/src/stores/auth';
 import { useAppTheme, type AppTheme } from '@/src/theme';
@@ -79,58 +79,66 @@ export default function ProfileEditScreen() {
       behavior={Platform.select({ ios: 'padding', default: undefined })}
       style={styles.root}
     >
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <DevScreenHeader screenName="프로필 수정" screenNumber="S-12-P" />
-        {/*
+      <ScreenRoot>
+        <ScreenScroll
+          applyBottomInset
+          contentContainerStyle={styles.container}
+          scrollProps={{ keyboardShouldPersistTaps: 'handled' }}
+        >
+          <ScreenHeader
+            meta={<DevScreenHeader screenName="프로필 수정" screenNumber="S-12-P" />}
+            title="프로필"
+          />
+          {/*
           화면: 프로필 수정 (S-12-P)
           기능: 닉네임과 프로필 이미지 URL을 수정하고 PATCH /users/me 응답을 현재 세션에 반영한다.
           가능한 다음 이동 화면: 없음
         */}
-        <Text style={styles.title}>프로필</Text>
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>이미지</Text>
-          <TouchableOpacity
-            activeOpacity={0.82}
-            style={styles.imageButton}
-            onPress={() => {
-              void handlePickImage();
-            }}
-          >
-            <Avatar size={104} uri={avatarUrl} />
-          </TouchableOpacity>
-        </View>
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>닉네임</Text>
-          <TextInput
-            autoCapitalize="none"
-            onChangeText={setNickname}
-            placeholder="닉네임을 입력하세요"
-            placeholderTextColor={theme.semantic.textMuted}
-            style={styles.input}
-            value={nickname}
-          />
-        </View>
-        <View style={styles.actionGroup}>
-          <TouchableOpacity
-            disabled={isSaving}
-            style={[styles.saveButton, isSaving && styles.disabledButton]}
-            onPress={() => {
-              void handleSave();
-            }}
-          >
-            <Text style={styles.saveButtonText}>{isSaving ? '저장 중' : '저장'}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            disabled={isSaving}
-            style={styles.cancelButton}
-            onPress={() => {
-              router.back();
-            }}
-          >
-            <Text style={styles.cancelButtonText}>취소</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>이미지</Text>
+            <TouchableOpacity
+              activeOpacity={0.82}
+              style={styles.imageButton}
+              onPress={() => {
+                void handlePickImage();
+              }}
+            >
+              <Avatar size={104} uri={avatarUrl} />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>닉네임</Text>
+            <TextInput
+              autoCapitalize="none"
+              onChangeText={setNickname}
+              placeholder="닉네임을 입력하세요"
+              placeholderTextColor={theme.semantic.textMuted}
+              style={styles.input}
+              value={nickname}
+            />
+          </View>
+          <View style={styles.actionGroup}>
+            <TouchableOpacity
+              disabled={isSaving}
+              style={[styles.saveButton, isSaving && styles.disabledButton]}
+              onPress={() => {
+                void handleSave();
+              }}
+            >
+              <Text style={styles.saveButtonText}>{isSaving ? '저장 중' : '저장'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              disabled={isSaving}
+              style={styles.cancelButton}
+              onPress={() => {
+                router.back();
+              }}
+            >
+              <Text style={styles.cancelButtonText}>취소</Text>
+            </TouchableOpacity>
+          </View>
+        </ScreenScroll>
+      </ScreenRoot>
     </KeyboardAvoidingView>
   );
 }

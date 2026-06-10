@@ -8,17 +8,14 @@ const APP_IDENTIFIERS = {
 const APP_ENV_MODES = {
   development: {
     appEnv: 'development',
-    showDevScreenHeader: true,
     useApiMocks: true,
   },
   preview: {
     appEnv: 'preview',
-    showDevScreenHeader: false,
     useApiMocks: true,
   },
   production: {
     appEnv: 'production',
-    showDevScreenHeader: false,
     useApiMocks: false,
   },
 } as const;

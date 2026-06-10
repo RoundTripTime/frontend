@@ -28,8 +28,14 @@ import {
   useItineraryShareMutation,
 } from '@/src/api/itineraries/hooks';
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import {
+  ScreenBody,
+  ScreenFooter,
+  ScreenHeader,
+  ScreenRoot,
+  ScreenScroll,
+} from '@/src/components/layout';
 import { PlanListSkeleton } from '@/src/components/LoadingSkeleton';
-import { RefreshableScrollView } from '@/src/components/RefreshableScrollView';
 import {
   createPlanListItemViewModel,
   type PlanListItemViewModel,
@@ -93,43 +99,45 @@ export default function PlansScreen() {
   };
 
   return (
-    <RefreshableScrollView
-      contentContainerStyle={styles.container}
-      style={styles.scroll}
-      onRefresh={() => plansQuery.refetch()}
-    >
-      <DevScreenHeader screenName="플랜 목록" screenNumber="S-06" />
-      {/*
-        화면: 플랜 목록 (S-06)
-        기능: 진행 중이거나 완성된 여행 플랜을 목록으로 관리하고 새 플랜 생성을 시작한다.
-        가능한 다음 이동 화면: S-06N, S-07
-      */}
-      <View style={styles.header}>
-        <Text style={styles.title}>내 플랜</Text>
-      </View>
-      {isInitialLoading ? (
-        <PlanListSkeleton />
-      ) : (
-        plans.map((plan) => (
-          <SwipePlanCard
-            key={plan.id}
-            plan={plan}
-            styles={styles}
-            theme={theme}
-            onDelete={handleDeletePlan}
-            onShare={handleSharePlan}
-          />
-        ))
-      )}
-      {!isInitialLoading && plans.length === 0 ? (
-        <Text style={styles.cardMeta}>아직 만든 플랜이 없습니다.</Text>
-      ) : null}
-      <Link href={'/plans/new' as Href} asChild>
-        <TouchableOpacity style={styles.primaryButton}>
-          <Text style={styles.primaryButtonText}>+ 새 플랜 만들기</Text>
-        </TouchableOpacity>
-      </Link>
-    </RefreshableScrollView>
+    <ScreenRoot>
+      <ScreenScroll contentContainerStyle={styles.container} onRefresh={() => plansQuery.refetch()}>
+        <ScreenHeader
+          meta={<DevScreenHeader screenName="플랜 목록" screenNumber="S-06" />}
+          title="내 플랜"
+        />
+        {/*
+          화면: 플랜 목록 (S-06)
+          기능: 진행 중이거나 완성된 여행 플랜을 목록으로 관리하고 새 플랜 생성을 시작한다.
+          가능한 다음 이동 화면: S-06N, S-07
+        */}
+        <ScreenBody style={styles.body}>
+          {isInitialLoading ? (
+            <PlanListSkeleton />
+          ) : (
+            plans.map((plan) => (
+              <SwipePlanCard
+                key={plan.id}
+                plan={plan}
+                styles={styles}
+                theme={theme}
+                onDelete={handleDeletePlan}
+                onShare={handleSharePlan}
+              />
+            ))
+          )}
+          {!isInitialLoading && plans.length === 0 ? (
+            <Text style={styles.cardMeta}>아직 만든 플랜이 없습니다.</Text>
+          ) : null}
+        </ScreenBody>
+      </ScreenScroll>
+      <ScreenFooter>
+        <Link href={'/plans/new' as Href} asChild>
+          <TouchableOpacity style={styles.primaryButton}>
+            <Text style={styles.primaryButtonText}>+ 새 플랜 만들기</Text>
+          </TouchableOpacity>
+        </Link>
+      </ScreenFooter>
+    </ScreenRoot>
   );
 }
 
@@ -362,11 +370,13 @@ function SwipePlanCard({ plan, styles, theme, onDelete, onShare }: SwipePlanCard
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    container: { backgroundColor: theme.semantic.background, gap: 16, padding: 20 },
-    scroll: { backgroundColor: theme.semantic.background, flex: 1 },
-    header: { gap: 12 },
-    title: { color: theme.semantic.text, fontSize: 34, fontWeight: '900' },
-    primaryButton: { backgroundColor: theme.semantic.primary, borderRadius: 8, padding: 14 },
+    container: { gap: theme.spacing.lg, padding: theme.spacing.lg },
+    body: { gap: theme.spacing.lg },
+    primaryButton: {
+      backgroundColor: theme.semantic.primary,
+      borderRadius: theme.radius.md,
+      padding: theme.spacing.md,
+    },
     primaryButtonText: { color: theme.semantic.onPrimary, fontWeight: '800', textAlign: 'center' },
     card: {
       backgroundColor: theme.semantic.surface,

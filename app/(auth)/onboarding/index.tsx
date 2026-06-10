@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { VideoView, useVideoPlayer, type VideoSource } from 'expo-video';
 import { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
 import { useAuthStore } from '@/src/stores/auth';
@@ -35,7 +36,8 @@ function pickRandomOnboardingVideo() {
 
 export default function OnboardingScreen() {
   const theme = useAppTheme();
-  const styles = createStyles(theme);
+  const safeAreaInsets = useSafeAreaInsets();
+  const styles = createStyles(theme, safeAreaInsets.bottom);
   const router = useRouter();
   const login = useAuthStore((state) => state.login);
   const status = useAuthStore((state) => state.status);
@@ -138,7 +140,7 @@ function OnboardingVideoBackground({
   );
 }
 
-const createStyles = (theme: AppTheme) =>
+const createStyles = (theme: AppTheme, safeAreaBottom: number) =>
   StyleSheet.create({
     actionGroup: { gap: 12 },
     backgroundMedia: {
@@ -159,7 +161,10 @@ const createStyles = (theme: AppTheme) =>
     contentLayer: {
       flex: 1,
       justifyContent: 'space-between',
-      paddingBottom: 42,
+      paddingBottom: Math.max(
+        theme.spacing.xxl + theme.spacing.sm,
+        safeAreaBottom + theme.spacing.lg,
+      ),
       paddingHorizontal: 22,
       paddingTop: 118,
     },

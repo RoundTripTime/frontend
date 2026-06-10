@@ -10,7 +10,6 @@ import 'react-native-reanimated';
 import '@/src/features/extraction/backgroundTask';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { DevScreenOverlay } from '@/src/components/DevScreenOverlay';
 import { ErrorBoundary } from '@/src/components/ErrorBoundary';
 import { ExtractionJobWatcher } from '@/src/features/extraction/ExtractionJobWatcher';
 import { installGlobalHandlers } from '@/src/lib/globalHandlers';
@@ -55,7 +54,6 @@ export default function RootLayout() {
                 <AuthGate />
                 <ExtractionJobWatcher />
                 <StatusBar style={appTheme.colorScheme === 'dark' ? 'dark' : 'auto'} />
-                <DevScreenOverlay />
               </QueryClientProvider>
             </ThemeProvider>
           </View>
