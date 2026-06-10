@@ -1,4 +1,3 @@
-import { Image, type ImageSource } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { VideoView, useVideoPlayer, type VideoSource } from 'expo-video';
 import { useState } from 'react';
@@ -8,20 +7,31 @@ import { DevScreenHeader } from '@/src/components/DevScreenHeader';
 import { useAuthStore } from '@/src/stores/auth';
 import { useAppTheme, type AppTheme } from '@/src/theme';
 
-type OnboardingBackgroundMedia =
-  | {
-      source: VideoSource;
-      type: 'video';
-    }
-  | {
-      source: ImageSource;
-      type: 'image';
-    };
-
-const backgroundMedia: OnboardingBackgroundMedia = {
-  source: require('../../../assets/videos/onboarding-travel.mp4') as VideoSource,
-  type: 'video',
+type OnboardingBackgroundVideo = {
+  source: VideoSource;
+  type: 'video';
 };
+
+const onboardingBackgroundVideos: readonly [
+  OnboardingBackgroundVideo,
+  ...OnboardingBackgroundVideo[],
+] = [
+  {
+    source: require('../../../assets/videos/onboarding-travel-portrait.mp4') as VideoSource,
+    type: 'video',
+  },
+  {
+    source: require('../../../assets/videos/onboarding-travel-landscape.mp4') as VideoSource,
+    type: 'video',
+  },
+];
+
+function pickRandomOnboardingVideo() {
+  const index = Math.floor(Math.random() * onboardingBackgroundVideos.length);
+  const fallbackVideo = onboardingBackgroundVideos[0];
+
+  return onboardingBackgroundVideos[index] ?? fallbackVideo;
+}
 
 export default function OnboardingScreen() {
   const theme = useAppTheme();
@@ -31,6 +41,7 @@ export default function OnboardingScreen() {
   const status = useAuthStore((state) => state.status);
   const errorMessage = useAuthStore((state) => state.errorMessage);
   const [pendingProvider, setPendingProvider] = useState<'google' | 'kakao' | null>(null);
+  const [backgroundMedia] = useState(pickRandomOnboardingVideo);
   const isLoading = status === 'checking';
 
   const handleLogin = async (provider: 'google' | 'kakao') => {
@@ -96,15 +107,11 @@ export default function OnboardingScreen() {
 }
 
 type OnboardingBackgroundProps = {
-  media: OnboardingBackgroundMedia;
+  media: OnboardingBackgroundVideo;
   styles: ReturnType<typeof createStyles>;
 };
 
 function OnboardingBackground({ media, styles }: OnboardingBackgroundProps) {
-  if (media.type === 'image') {
-    return <Image contentFit="cover" source={media.source} style={styles.backgroundMedia} />;
-  }
-
   return <OnboardingVideoBackground source={media.source} styles={styles} />;
 }
 
