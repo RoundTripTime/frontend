@@ -1,20 +1,29 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { BackHandler, Platform, ToastAndroid } from 'react-native';
 
 import { listJobCandidates } from '@/src/api/candidates';
 import { submitSourceLink } from '@/src/api/sourceLinks';
+import { getAccessToken } from '@/src/lib/tokenStore';
 import { usePlaceCandidateStore } from '@/src/stores/placeCandidates';
 
 import type { MappedApiError } from '@/src/api/errorMap';
 
 type SubmissionStatus = 'idle' | 'submitting' | 'succeeded' | 'failed';
+type ShareReceiveParams = { from?: string; url?: string };
+
+const ANDROID_SHARE_SOURCE = 'android-share';
 
 export function useShareReceiveController() {
-  const params = useLocalSearchParams<{ url?: string }>();
+  const params = useLocalSearchParams<ShareReceiveParams>();
   const incomingUrl = useMemo(() => {
     const value = Array.isArray(params.url) ? params.url[0] : params.url;
     return value?.trim() || '';
   }, [params.url]);
+  const isAndroidShare = useMemo(() => {
+    const value = Array.isArray(params.from) ? params.from[0] : params.from;
+    return value === ANDROID_SHARE_SOURCE && Platform.OS === 'android';
+  }, [params.from]);
   const [url, setUrl] = useState(incomingUrl);
   const [status, setStatus] = useState<SubmissionStatus>('idle');
   const [message, setMessage] = useState('');
@@ -36,6 +45,52 @@ export function useShareReceiveController() {
     }
   };
 
+  const showAndroidShareToast = (toastMessage: string) => {
+    if (isAndroidShare) {
+      ToastAndroid.show(toastMessage, ToastAndroid.SHORT);
+    }
+  };
+
+  const exitAndroidShare = () => {
+    if (isAndroidShare) {
+      setTimeout(() => {
+        BackHandler.exitApp();
+      }, 250);
+    }
+  };
+
+  const completeSubmission = (nextMessage: string) => {
+    setStatus('succeeded');
+    setMessage(nextMessage);
+
+    if (isAndroidShare) {
+      showAndroidShareToast(nextMessage);
+      exitAndroidShare();
+      return;
+    }
+
+    router.replace('/places/recent');
+  };
+
+  const fallbackToAuth = () => {
+    setStatus('failed');
+    setMessage('로그인이 필요합니다.');
+
+    if (isAndroidShare) {
+      showAndroidShareToast('로그인이 필요합니다.');
+      router.replace('/(auth)/onboarding');
+    }
+  };
+
+  const returnToSource = () => {
+    if (isAndroidShare) {
+      BackHandler.exitApp();
+      return;
+    }
+
+    router.replace('/');
+  };
+
   const submitUrl = async (sharedUrl = url) => {
     const trimmedUrl = sharedUrl.trim();
 
@@ -45,34 +100,53 @@ export function useShareReceiveController() {
       return;
     }
 
+    if (isAndroidShare) {
+      const accessToken = await getAccessToken();
+
+      if (!accessToken) {
+        fallbackToAuth();
+        return;
+      }
+    }
+
     setStatus('submitting');
     setMessage('공유 링크를 제출하고 있어요.');
 
     try {
       await createAnalysisJob(trimmedUrl);
-      setStatus('succeeded');
-      setMessage('분석을 시작했어요.');
-      router.replace('/places/recent');
+      completeSubmission('분석을 시작했어요.');
     } catch (error) {
       const mappedError = error as Partial<MappedApiError>;
+      const isTokenFailure = mappedError.status === 401 || mappedError.code === 'UNAUTHORIZED';
 
       if (
         mappedError.code === 'DUPLICATE_LINK' &&
         activeJobId &&
         activeSourceLink?.url === trimmedUrl
       ) {
-        setStatus('succeeded');
-        setMessage('이미 처리 중인 링크예요.');
-        router.replace('/places/recent');
+        completeSubmission('이미 처리 중인 링크예요.');
+        return;
+      }
+
+      if (mappedError.code === 'DUPLICATE_LINK' && isAndroidShare) {
+        completeSubmission('이미 처리 중인 링크예요.');
+        return;
+      }
+
+      if (isTokenFailure) {
+        fallbackToAuth();
         return;
       }
 
       setStatus('failed');
-      setMessage(
+      const fallbackMessage =
         mappedError.code === 'DUPLICATE_LINK'
           ? '이미 처리 중인 링크예요. 잠시 후 최근 추가한 장소에서 확인해주세요.'
-          : (mappedError.message ?? '링크 제출에 실패했어요. 잠시 후 다시 시도해주세요.'),
-      );
+          : (mappedError.message ?? '링크 제출에 실패했어요. 잠시 후 다시 시도해주세요.');
+      const nextMessage = isAndroidShare ? '네트워크 문제로 제출하지 못했어요.' : fallbackMessage;
+
+      setMessage(nextMessage);
+      showAndroidShareToast(nextMessage);
     }
   };
 
@@ -83,9 +157,14 @@ export function useShareReceiveController() {
 
     autoSubmittedRef.current = true;
     setUrl(incomingUrl);
+
+    if (isAndroidShare) {
+      return;
+    }
+
     void submitUrl(incomingUrl);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [incomingUrl]);
+  }, [incomingUrl, isAndroidShare]);
 
   const isSubmitting = status === 'submitting';
 
@@ -93,6 +172,8 @@ export function useShareReceiveController() {
     canSubmit: !isSubmitting,
     isSubmitting,
     message,
+    returnLabel: isAndroidShare ? '이전 앱으로 돌아가기' : '앱으로 돌아가기',
+    returnToSource,
     setUrl,
     submitUrl,
     url,

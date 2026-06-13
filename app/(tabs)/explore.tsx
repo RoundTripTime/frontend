@@ -1,5 +1,5 @@
 import { Link, type Href } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { useDiscoverPlacesQuery } from '@/src/api/places/hooks';
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
@@ -12,6 +12,7 @@ import {
   ScreenScroll,
 } from '@/src/components/layout';
 import { CardGridSkeleton } from '@/src/components/LoadingSkeleton';
+import { AppChip } from '@/src/components/ui';
 import { PlaceCard } from '@/src/features/places/components/PlaceCard';
 import { getPlaceCountryLabel } from '@/src/features/places/viewModel';
 import { useMinimumLoading } from '@/src/hooks/useMinimumLoading';
@@ -42,9 +43,9 @@ export default function ExploreScreen() {
         */}
         <ScreenControls contentContainerStyle={styles.chips}>
           {['전체', '관광명소', '맛집', '카페', '숙박', '한국', '일본', '동남아'].map((label) => (
-            <Text key={label} style={styles.chip}>
+            <AppChip key={label} style={styles.compactChip} textStyle={styles.compactChipText}>
               {label}
-            </Text>
+            </AppChip>
           ))}
         </ScreenControls>
         <ScreenBody style={styles.body}>
@@ -88,18 +89,13 @@ const createStyles = (theme: AppTheme) =>
     },
     body: { gap: theme.spacing.sm },
     chips: { flexDirection: 'row', gap: theme.spacing.sm, paddingRight: theme.spacing.md },
-    chip: {
-      alignItems: 'center',
-      backgroundColor: theme.semantic.surfaceMuted,
-      borderRadius: 14,
-      color: theme.semantic.textSecondary,
+    compactChip: {
+      minWidth: 68,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+    },
+    compactChipText: {
       fontSize: 12,
-      fontWeight: '700',
-      height: 28,
-      lineHeight: 28,
-      overflow: 'hidden',
-      textAlign: 'center',
-      width: 68,
     },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
   });

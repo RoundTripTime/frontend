@@ -124,6 +124,7 @@ function OnboardingVideoBackground({
   source: VideoSource;
   styles: ReturnType<typeof createStyles>;
 }) {
+  const videoKey = typeof source === 'number' ? String(source) : JSON.stringify(source);
   const player = useVideoPlayer(source, (nextPlayer) => {
     nextPlayer.loop = true;
     nextPlayer.muted = true;
@@ -132,9 +133,12 @@ function OnboardingVideoBackground({
 
   return (
     <VideoView
+      key={videoKey}
+      allowsFullscreen={false}
       contentFit="cover"
       nativeControls={false}
       player={player}
+      surfaceType="textureView"
       style={styles.backgroundMedia}
     />
   );

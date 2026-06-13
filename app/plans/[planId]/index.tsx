@@ -11,10 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import DraggableFlatList, {
-  ScaleDecorator,
-  type RenderItemParams,
-} from 'react-native-draggable-flatlist';
+import DraggableFlatList, { type RenderItemParams } from 'react-native-draggable-flatlist';
 
 import {
   itineraryKeys,
@@ -27,7 +24,6 @@ import { ScreenBody, ScreenFooter, ScreenRoot } from '@/src/components/layout';
 import {
   applyScheduleToRows,
   buildScheduleRows,
-  getRowTimeLabels,
   getSchedulePatches,
   type ScheduleRow,
 } from '@/src/features/plans/scheduleModel';
@@ -36,9 +32,21 @@ import { useAppTheme, type AppTheme } from '@/src/theme';
 
 import type { Itinerary } from '@/src/api/itineraries/types';
 
+const SCHEDULE_PLACE_ROW_HEIGHT = 72;
+const SCHEDULE_DRAG_AUTOSCROLL_SPEED = 140;
+const SCHEDULE_DRAG_AUTOSCROLL_THRESHOLD = 120;
+const SCHEDULE_DRAG_ANIMATION_CONFIG = {
+  damping: 60,
+  mass: 0.2,
+  overshootClamping: true,
+  restDisplacementThreshold: 0.5,
+  restSpeedThreshold: 0.5,
+  stiffness: 700,
+};
+
 export default function PlanEditScreen() {
   const theme = useAppTheme();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const queryClient = useQueryClient();
   const { planId } = useLocalSearchParams<{ planId: string }>();
   const currentPlanId = planId ?? '';
@@ -64,7 +72,6 @@ export default function PlanEditScreen() {
         : [],
     [plan?.allItems, planQuery.data],
   );
-  const timeLabels = useMemo(() => getRowTimeLabels(rows), [rows]);
 
   useEffect(() => {
     if (!savingRows) {
@@ -152,6 +159,16 @@ export default function PlanEditScreen() {
     setRows(nextRows);
   }, []);
 
+  const renderScheduleRowItem = useCallback(
+    (params: RenderItemParams<ScheduleRow>) => <ScheduleRowItem {...params} styles={styles} />,
+    [styles],
+  );
+
+  const renderScheduleRowPlaceholder = useCallback(
+    ({ item }: { item: ScheduleRow }) => <ScheduleRowPlaceholder item={item} styles={styles} />,
+    [styles],
+  );
+
   return (
     <ScreenRoot style={styles.screen}>
       <PlanDetailHeader
@@ -176,16 +193,17 @@ export default function PlanEditScreen() {
           <ScreenBody style={styles.listShell}>
             <DraggableFlatList
               activationDistance={12}
-              autoscrollSpeed={90}
-              autoscrollThreshold={80}
+              animationConfig={SCHEDULE_DRAG_ANIMATION_CONFIG}
+              autoscrollSpeed={SCHEDULE_DRAG_AUTOSCROLL_SPEED}
+              autoscrollThreshold={SCHEDULE_DRAG_AUTOSCROLL_THRESHOLD}
               containerStyle={styles.scheduleList}
               contentContainerStyle={styles.scheduleListContent}
               data={rows}
+              dragItemOverflow
               keyExtractor={(item) => item.id}
               onDragEnd={handleDragEnd}
-              renderItem={(params) => (
-                <ScheduleRowItem {...params} styles={styles} timeLabels={timeLabels} />
-              )}
+              renderItem={renderScheduleRowItem}
+              renderPlaceholder={renderScheduleRowPlaceholder}
             />
           </ScreenBody>
           <ScreenFooter insetSpacing={theme.spacing.md} style={styles.footerHost}>
@@ -297,10 +315,8 @@ function ScheduleRowItem({
   isActive,
   item,
   styles,
-  timeLabels,
 }: RenderItemParams<ScheduleRow> & {
   styles: ReturnType<typeof createStyles>;
-  timeLabels: Map<string, string>;
 }) {
   if (item.type === 'day') {
     return (
@@ -321,32 +337,58 @@ function ScheduleRowItem({
     );
   }
 
-  const timeLabel = timeLabels.get(item.item.itemId) ?? '미배치';
+  return (
+    <TouchableOpacity
+      activeOpacity={0.9}
+      disabled={isActive}
+      onLongPress={drag}
+      style={[styles.schedulePlaceCard, isActive && styles.activeSchedulePlaceCard]}
+    >
+      <View style={styles.draggableHeader}>
+        <View style={styles.placeCopy}>
+          <Text numberOfLines={1} style={styles.placeName}>
+            {item.item.name}
+          </Text>
+          <Text numberOfLines={1} style={styles.place}>
+            {item.item.timeLabel}
+          </Text>
+        </View>
+        <Text style={styles.dragHandleText}>길게 눌러 이동</Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+function ScheduleRowPlaceholder({
+  item,
+  styles,
+}: {
+  item: ScheduleRow;
+  styles: ReturnType<typeof createStyles>;
+}) {
+  if (item.type !== 'place') {
+    return <View style={styles.sectionPlaceholder} />;
+  }
 
   return (
-    <ScaleDecorator>
-      <TouchableOpacity
-        activeOpacity={0.9}
-        disabled={isActive}
-        onLongPress={drag}
-        style={[styles.schedulePlaceCard, isActive && styles.activeSchedulePlaceCard]}
-      >
-        <View style={styles.draggableHeader}>
-          <View style={styles.placeCopy}>
-            <Text style={styles.placeName}>{item.item.name}</Text>
-            <Text style={styles.place}>{timeLabel}</Text>
-          </View>
-          <Text style={styles.dragHandleText}>길게 눌러 이동</Text>
+    <View style={[styles.schedulePlaceCard, styles.schedulePlacePlaceholder]}>
+      <View style={styles.draggableHeader}>
+        <View style={styles.placeCopy}>
+          <Text numberOfLines={1} style={styles.placeName}>
+            {item.item.name}
+          </Text>
+          <Text numberOfLines={1} style={styles.place}>
+            {item.item.timeLabel}
+          </Text>
         </View>
-      </TouchableOpacity>
-    </ScaleDecorator>
+      </View>
+    </View>
   );
 }
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     activeSchedulePlaceCard: {
-      backgroundColor: theme.semantic.primarySoft,
       borderColor: theme.semantic.primary,
       borderWidth: 1,
     },
@@ -379,15 +421,38 @@ const createStyles = (theme: AppTheme) =>
     savingText: { color: theme.semantic.textMuted, fontWeight: '800', textAlign: 'center' },
     schedulePlaceCard: {
       backgroundColor: theme.semantic.input,
+      borderColor: theme.semantic.border,
+      borderWidth: 1,
       borderRadius: 8,
       gap: 12,
+      height: SCHEDULE_PLACE_ROW_HEIGHT,
+      justifyContent: 'center',
+      marginBottom: 14,
       padding: 12,
     },
     scheduleList: { flex: 1 },
-    scheduleListContent: { gap: 14, paddingBottom: theme.spacing.md, paddingTop: 2 },
+    scheduleListContent: { paddingBottom: theme.spacing.md, paddingTop: 2 },
+    schedulePlacePlaceholder: {
+      backgroundColor: theme.semantic.primarySoft,
+      borderColor: theme.semantic.primary,
+      opacity: 0.42,
+    },
     screen: { gap: 14, paddingHorizontal: 20, paddingTop: 20 },
-    section: { backgroundColor: theme.semantic.surface, borderRadius: 8, gap: 10, padding: 14 },
+    section: {
+      backgroundColor: theme.semantic.surface,
+      borderRadius: 8,
+      gap: 10,
+      marginBottom: 14,
+      padding: 14,
+    },
     sectionTitle: { color: theme.semantic.text, fontSize: 17, fontWeight: '800' },
+    sectionPlaceholder: {
+      backgroundColor: theme.semantic.surfaceMuted,
+      borderRadius: 8,
+      marginBottom: 14,
+      minHeight: 48,
+      opacity: 0.32,
+    },
     title: { color: theme.semantic.text, fontSize: 28, fontWeight: '800' },
     titleButton: { alignItems: 'center', flexDirection: 'row', gap: 6 },
     titleInput: {

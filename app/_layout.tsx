@@ -52,7 +52,7 @@ export default function RootLayout() {
             <ThemeProvider value={navigationTheme}>
               <QueryClientProvider client={queryClient}>
                 <AuthGate />
-                <ExtractionJobWatcher />
+                <AuthenticatedExtractionJobWatcher />
                 <StatusBar style={appTheme.colorScheme === 'dark' ? 'dark' : 'auto'} />
               </QueryClientProvider>
             </ThemeProvider>
@@ -134,6 +134,7 @@ function AuthGate() {
         <Stack.Screen name="plans/[planId]/map/index" options={{ headerShown: false }} />
         <Stack.Screen name="plans/[planId]/agent/index" options={{ title: 'Planning Agent' }} />
         <Stack.Screen name="plans/[planId]/share/index" options={{ title: '플랜 공유' }} />
+        <Stack.Screen name="community/posts/new/index" options={{ headerShown: false }} />
         <Stack.Screen name="community/posts/[postId]/index" options={{ headerShown: false }} />
         <Stack.Screen name="community/market/index" options={{ headerShown: false }} />
         <Stack.Screen
@@ -149,6 +150,16 @@ function AuthGate() {
       </Stack>
     </View>
   );
+}
+
+function AuthenticatedExtractionJobWatcher() {
+  const status = useAuthStore((state) => state.status);
+
+  if (status !== 'authenticated') {
+    return null;
+  }
+
+  return <ExtractionJobWatcher />;
 }
 
 const styles = StyleSheet.create({

@@ -1,6 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Link, type Href } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { useCommunityPostsQuery } from '@/src/api/community/hooks';
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
@@ -14,6 +15,7 @@ import {
   ScreenScroll,
 } from '@/src/components/layout';
 import { FeedSkeleton } from '@/src/components/LoadingSkeleton';
+import { AppChip } from '@/src/components/ui';
 import { useMinimumLoading } from '@/src/hooks/useMinimumLoading';
 import { useAppTheme, type AppTheme } from '@/src/theme';
 
@@ -24,6 +26,16 @@ const feedTabs: { feed?: FeedType; label: string }[] = [
   { feed: 'following', label: '팔로잉' },
   { label: '플랜 마켓' },
 ];
+
+function formatPostDate(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return `${date.getMonth() + 1}.${date.getDate()}`;
+}
 
 export default function CommunityScreen() {
   const theme = useAppTheme();
@@ -56,21 +68,18 @@ export default function CommunityScreen() {
           {feedTabs.map((tab) =>
             tab.label === '플랜 마켓' ? (
               <Link key={tab.label} href={'/community/market' as Href} asChild>
-                <TouchableOpacity>
-                  <Text style={styles.chip}>{tab.label}</Text>
-                </TouchableOpacity>
+                <AppChip>{tab.label}</AppChip>
               </Link>
             ) : (
-              <TouchableOpacity
+              <AppChip
                 key={tab.label}
+                selected={selectedFeed === tab.feed}
                 onPress={() => {
                   setSelectedFeed(tab.feed ?? 'all');
                 }}
               >
-                <Text style={[styles.chip, selectedFeed === tab.feed && styles.activeChip]}>
-                  {tab.label}
-                </Text>
-              </TouchableOpacity>
+                {tab.label}
+              </AppChip>
             ),
           )}
         </ScreenControls>
@@ -81,9 +90,17 @@ export default function CommunityScreen() {
             posts.map((post) => (
               <Link key={post.post_id} href={`/community/posts/${post.post_id}` as Href} asChild>
                 <TouchableOpacity style={styles.card}>
-                  <View style={styles.avatar} />
-                  <Text style={styles.author}>{post.author.nickname}</Text>
-                  <Text numberOfLines={3} style={styles.body}>
+                  <View style={styles.cardHeader}>
+                    {post.author.avatar_url ? (
+                      <Image source={{ uri: post.author.avatar_url }} style={styles.avatar} />
+                    ) : (
+                      <View style={styles.avatar} />
+                    )}
+                    <Text numberOfLines={1} style={styles.author}>
+                      {post.author.nickname}
+                    </Text>
+                  </View>
+                  <Text ellipsizeMode="tail" numberOfLines={2} style={styles.body}>
                     {post.content}
                   </Text>
                   {post.tagged_places.length > 0 ? (
@@ -99,9 +116,29 @@ export default function CommunityScreen() {
                       ))}
                     </ScrollView>
                   ) : null}
-                  <Text style={styles.meta}>
-                    좋아요 {post.like_count} · 댓글 {post.comment_count}
-                  </Text>
+                  <View style={styles.cardFooter}>
+                    <View style={styles.reactionFrame}>
+                      <View style={styles.reactionItem}>
+                        <Ionicons
+                          color={post.is_liked ? theme.semantic.danger : theme.semantic.textMuted}
+                          name={post.is_liked ? 'heart' : 'heart-outline'}
+                          size={17}
+                        />
+                        <Text style={styles.meta}>{post.like_count}</Text>
+                      </View>
+                      <View style={styles.reactionItem}>
+                        <Ionicons
+                          color={theme.semantic.textMuted}
+                          name="chatbubble-outline"
+                          size={16}
+                        />
+                        <Text style={styles.meta}>{post.comment_count}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.dateFrame}>
+                      <Text style={styles.meta}>{formatPostDate(post.created_at)}</Text>
+                    </View>
+                  </View>
                 </TouchableOpacity>
               </Link>
             ))
@@ -112,9 +149,11 @@ export default function CommunityScreen() {
         </ScreenBody>
       </ScreenScroll>
       <ScreenOverlay applyBottomInset style={styles.fabOverlay}>
-        <TouchableOpacity style={styles.fab}>
-          <Text style={styles.fabText}>글쓰기</Text>
-        </TouchableOpacity>
+        <Link href={'/community/posts/new' as Href} asChild>
+          <TouchableOpacity style={styles.fab}>
+            <Text style={styles.fabText}>글쓰기</Text>
+          </TouchableOpacity>
+        </Link>
       </ScreenOverlay>
     </ScreenRoot>
   );
@@ -128,19 +167,6 @@ const createStyles = (theme: AppTheme) =>
       paddingBottom: theme.spacing.xxl * 2,
     },
     chips: { flexDirection: 'row', gap: theme.spacing.sm, paddingRight: theme.spacing.lg },
-    chip: {
-      backgroundColor: theme.semantic.surfaceMuted,
-      borderRadius: theme.radius.xl,
-      color: theme.semantic.textSecondary,
-      overflow: 'hidden',
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
-    },
-    activeChip: {
-      backgroundColor: theme.semantic.primarySoft,
-      color: theme.semantic.primaryDeep,
-      fontWeight: '700',
-    },
     feedBody: { gap: theme.spacing.lg },
     card: {
       backgroundColor: theme.semantic.surface,
@@ -148,15 +174,40 @@ const createStyles = (theme: AppTheme) =>
       gap: theme.spacing.sm,
       padding: theme.spacing.lg,
     },
+    cardFooter: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    cardHeader: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      gap: theme.spacing.sm,
+    },
     avatar: {
       backgroundColor: theme.semantic.mediaPlaceholder,
       borderRadius: 18,
       height: 36,
       width: 36,
     },
-    author: { color: theme.semantic.text, fontWeight: '800' },
+    author: { color: theme.semantic.text, flex: 1, fontWeight: '800' },
     body: { color: theme.semantic.textSecondary, lineHeight: 20 },
+    dateFrame: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+    },
     placeTag: { color: theme.semantic.textMuted, fontSize: 14, fontWeight: '800' },
+    reactionFrame: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      gap: theme.spacing.md,
+    },
+    reactionItem: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      gap: theme.spacing.xs,
+    },
     tagRow: { gap: theme.spacing.sm, paddingRight: theme.spacing.lg },
     meta: { color: theme.semantic.textMuted },
     fabOverlay: {

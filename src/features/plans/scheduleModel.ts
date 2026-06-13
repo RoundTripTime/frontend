@@ -211,26 +211,39 @@ export function applyScheduleToRows(rows: ScheduleRow[]): ScheduleRow[] {
       ? formatClock(currentStartMinutes + PLANNED_DURATION_MINUTES)
       : null;
     const nextSortOrder = currentDayIndex ? currentSortOrder : null;
+    const nextMarkerTone: PlanPlaceViewModel['markerTone'] = currentDayIndex ? 'day' : 'unassigned';
 
     if (currentDayIndex) {
       currentSortOrder += 1;
       currentStartMinutes += PLANNED_DURATION_MINUTES + GAP_MINUTES;
     }
 
-    return {
-      ...row,
-      item: {
-        ...row.item,
-        dayIndex: currentDayIndex,
-        dayLabel: currentDayIndex ? `Day ${currentDayIndex}` : '미배치',
-        endTime: nextEndTime,
-        markerTone: currentDayIndex ? 'day' : 'unassigned',
-        plannedDurationMinutes: currentDayIndex ? PLANNED_DURATION_MINUTES : null,
-        sortOrder: nextSortOrder,
-        startTime: nextStartTime,
-        timeLabel: currentDayIndex ? `${nextStartTime} - ${nextEndTime}` : '미배치',
-      },
+    const nextItem = {
+      ...row.item,
+      dayIndex: currentDayIndex,
+      dayLabel: currentDayIndex ? `Day ${currentDayIndex}` : '미배치',
+      endTime: nextEndTime,
+      markerTone: nextMarkerTone,
+      plannedDurationMinutes: currentDayIndex ? PLANNED_DURATION_MINUTES : null,
+      sortOrder: nextSortOrder,
+      startTime: nextStartTime,
+      timeLabel: currentDayIndex ? `${nextStartTime} - ${nextEndTime}` : '미배치',
     };
+
+    if (
+      row.item.dayIndex === nextItem.dayIndex &&
+      row.item.dayLabel === nextItem.dayLabel &&
+      row.item.endTime === nextItem.endTime &&
+      row.item.markerTone === nextItem.markerTone &&
+      row.item.plannedDurationMinutes === nextItem.plannedDurationMinutes &&
+      row.item.sortOrder === nextItem.sortOrder &&
+      row.item.startTime === nextItem.startTime &&
+      row.item.timeLabel === nextItem.timeLabel
+    ) {
+      return row;
+    }
+
+    return { ...row, item: nextItem };
   });
 }
 

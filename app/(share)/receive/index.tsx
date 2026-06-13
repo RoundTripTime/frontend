@@ -1,4 +1,3 @@
-import { Link, type Href } from 'expo-router';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
@@ -8,7 +7,8 @@ import { useAppTheme, type AppTheme } from '@/src/theme';
 export default function ShareReceiveScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
-  const { canSubmit, isSubmitting, message, setUrl, submitUrl, url } = useShareReceiveController();
+  const { canSubmit, isSubmitting, message, returnLabel, returnToSource, setUrl, submitUrl, url } =
+    useShareReceiveController();
 
   return (
     <View style={styles.container}>
@@ -39,9 +39,9 @@ export default function ShareReceiveScreen() {
         <Text style={styles.submitButtonText}>{isSubmitting ? '제출 중' : '제출'}</Text>
       </TouchableOpacity>
       {message ? <Text style={styles.message}>{message}</Text> : null}
-      <Link href={'/' as Href} style={styles.link}>
-        앱으로 돌아가기
-      </Link>
+      <TouchableOpacity hitSlop={8} onPress={returnToSource} style={styles.returnHitBox}>
+        <Text style={styles.link}>{returnLabel}</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -79,5 +79,12 @@ const createStyles = (theme: AppTheme) =>
     },
     disabledButton: { opacity: 0.5 },
     message: { color: theme.semantic.textSecondary, fontWeight: '700', textAlign: 'center' },
+    returnHitBox: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 48,
+      paddingHorizontal: 28,
+      paddingVertical: 10,
+    },
     link: { color: theme.semantic.textMuted, fontWeight: '700' },
   });

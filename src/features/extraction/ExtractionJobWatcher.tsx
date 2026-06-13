@@ -3,9 +3,11 @@ import { router } from 'expo-router';
 import { useEffect, useRef } from 'react';
 
 import { useJobCandidatesQuery } from '@/src/api/candidates/hooks';
+import { isProductionMode } from '@/src/lib/appMode';
 import { usePlaceCandidateStore } from '@/src/stores/placeCandidates';
 
 import {
+  clearStoredExtractionJob,
   getStoredExtractionJob,
   hasNotifiedExtractionJob,
   markExtractionJobNotified,
@@ -14,6 +16,7 @@ import { registerExtractionBackgroundTask } from './backgroundTask';
 import { configureExtractionNotifications, notifyExtractionCompleted } from './notifications';
 
 const waitingStatuses = new Set(['pending', 'processing']);
+const DEVELOPMENT_JOB_ID = 'mock-job';
 
 // TODO(server-push): 서버 완료 push가 도입되면 foreground polling은 fallback/debug 용도로 축소한다.
 export function ExtractionJobWatcher() {
@@ -43,6 +46,11 @@ export function ExtractionJobWatcher() {
   useEffect(() => {
     void getStoredExtractionJob().then((activeJob) => {
       if (activeJob) {
+        if (isProductionMode && activeJob.jobId === DEVELOPMENT_JOB_ID) {
+          void clearStoredExtractionJob();
+          return;
+        }
+
         hydrateActiveJob(activeJob.jobId);
       }
     });

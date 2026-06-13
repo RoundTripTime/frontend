@@ -13,6 +13,7 @@ import {
   ScreenScroll,
 } from '@/src/components/layout';
 import { CardGridSkeleton } from '@/src/components/LoadingSkeleton';
+import { AppChip } from '@/src/components/ui';
 import { PlaceCard } from '@/src/features/places/components/PlaceCard';
 import { createPlaceCardViewModel, type PlaceRegionFilter } from '@/src/features/places/viewModel';
 import { useMinimumLoading } from '@/src/hooks/useMinimumLoading';
@@ -76,9 +77,13 @@ export default function HomeScreen() {
 
         <ScreenControls contentContainerStyle={styles.chips}>
           {placeTabs.map((label) => (
-            <TouchableOpacity key={label} onPress={() => setSelectedTab(label)}>
-              <Text style={[styles.chip, selectedTab === label && styles.activeChip]}>{label}</Text>
-            </TouchableOpacity>
+            <AppChip
+              key={label}
+              selected={selectedTab === label}
+              onPress={() => setSelectedTab(label)}
+            >
+              {label}
+            </AppChip>
           ))}
         </ScreenControls>
 
@@ -137,19 +142,6 @@ const createStyles = (theme: AppTheme) =>
       fontWeight: '900',
     },
     chips: { flexDirection: 'row', gap: theme.spacing.sm, paddingRight: theme.spacing.lg },
-    chip: {
-      backgroundColor: theme.semantic.surfaceMuted,
-      borderRadius: theme.radius.xl,
-      color: theme.semantic.textSecondary,
-      overflow: 'hidden',
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
-    },
-    activeChip: {
-      backgroundColor: theme.semantic.primarySoft,
-      color: theme.semantic.primaryDeep,
-      fontWeight: '700',
-    },
     body: { gap: theme.spacing.lg },
     pendingOverlay: {
       flex: 1,
