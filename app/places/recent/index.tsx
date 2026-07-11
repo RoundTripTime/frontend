@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ScrollView,
@@ -17,16 +17,32 @@ import {
   useBatchUpdateCandidatesMutation,
   useJobCandidatesQuery,
 } from '@/src/api/candidates/hooks';
+import { useNotificationsQuery } from '@/src/api/notifications/hooks';
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
 import { EmptyState } from '@/src/components/EmptyState';
 import { PlanListSkeleton } from '@/src/components/LoadingSkeleton';
 import {
   createPlaceCandidateCardViewModel,
+  getPlaceCandidateId,
   hasResolvedCandidatePlace,
+  type PlaceCandidateCardViewModel,
 } from '@/src/features/places/viewModel';
-import { queryClient } from '@/src/lib/queryClient';
+import { queryClient, queryKeys } from '@/src/lib/queryClient';
 import { usePlaceCandidateStore } from '@/src/stores/placeCandidates';
 import { useAppTheme, type AppTheme } from '@/src/theme';
+
+type RecentPlaceResultStatus = 'places_resolved' | 'candidates_only' | 'no_candidates' | 'failed';
+
+type UnresolvedCandidateCardViewModel = Omit<
+  PlaceCandidateCardViewModel,
+  'latitude' | 'longitude' | 'placeId'
+> & {
+  latitude: null;
+  longitude: null;
+  placeId: null;
+};
+
+type RecentCandidateCardViewModel = PlaceCandidateCardViewModel | UnresolvedCandidateCardViewModel;
 
 type CandidateActionButtonProps = {
   disabled: boolean;
@@ -57,38 +73,81 @@ function CandidateActionButton({
   );
 }
 
+function getRecentPlaceResultStatus(
+  sourceStatus: string | undefined,
+  candidates: RecentCandidateCardViewModel[],
+): RecentPlaceResultStatus | null {
+  if (sourceStatus === 'failed') {
+    return 'failed';
+  }
+
+  if (sourceStatus !== 'done') {
+    return null;
+  }
+
+  if (candidates.length === 0) {
+    return 'no_candidates';
+  }
+
+  if (candidates.some((candidate) => candidate.placeId)) {
+    return 'places_resolved';
+  }
+
+  return 'candidates_only';
+}
+
 export default function RecentPlacesScreen() {
+  const params = useLocalSearchParams<{ jobId?: string }>();
   const theme = useAppTheme();
   const styles = createStyles(theme);
   const cachedCandidates = usePlaceCandidateStore((state) => state.candidates);
   const cachedSourceLink = usePlaceCandidateStore((state) => state.sourceLink);
-  const jobId = usePlaceCandidateStore((state) => state.jobId);
+  const storedJobId = usePlaceCandidateStore((state) => state.jobId);
+  const routeJobId = Array.isArray(params.jobId) ? params.jobId[0] : params.jobId;
+  const notificationsQuery = useNotificationsQuery({ limit: 5 });
+  const latestNotificationJobId = notificationsQuery.data?.items.find(
+    (notification) => notification.job_id,
+  )?.job_id;
+  const jobId = routeJobId ?? latestNotificationJobId ?? storedJobId;
   const setAnalysisResult = usePlaceCandidateStore((state) => state.setAnalysisResult);
   const candidatesQuery = useJobCandidatesQuery(jobId ?? '');
   const batchUpdateCandidatesMutation = useBatchUpdateCandidatesMutation();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const rawCandidates = candidatesQuery.data?.candidates ?? cachedCandidates;
   const candidates = rawCandidates.filter((candidate) => candidate.status === 'proposed');
-  const resolvedCandidates = candidates.filter(hasResolvedCandidatePlace);
-  const emptyCandidateTitle =
-    rawCandidates.length > 0 && candidates.length === 0
-      ? '모든 후보를 처리했어요'
-      : '추출된 장소가 없습니다';
-  const emptyCandidateDescription =
-    candidates.length > 0 && resolvedCandidates.length === 0
-      ? '장소를 찾지 못했거나 지도 장소로 확인되지 않았습니다.'
-      : '이 링크에서 추출된 장소가 없습니다.';
   const sourceLink = candidatesQuery.data?.source_link ?? cachedSourceLink;
   const sourceStatus = sourceLink?.status;
   const isAnalysisWaiting = sourceStatus === 'pending' || sourceStatus === 'processing';
   const analysisFailed = sourceStatus === 'failed';
   const wasWaitingRef = useRef(false);
-  const candidateCards = useMemo(
-    () => resolvedCandidates.map(createPlaceCandidateCardViewModel),
-    [resolvedCandidates],
+  const candidateCards = useMemo<RecentCandidateCardViewModel[]>(
+    () =>
+      candidates.map((candidate) => {
+        const candidateId = getPlaceCandidateId(candidate);
+
+        if (hasResolvedCandidatePlace(candidate)) {
+          return createPlaceCandidateCardViewModel(candidate);
+        }
+
+        return {
+          id: candidateId,
+          placeId: null,
+          name: candidate.candidate_name,
+          category: candidate.category,
+          countryLabel: '장소 확인 필요',
+          status: candidate.status,
+          statusLabel: '확인 대기',
+          evidence: candidate.evidence,
+          latitude: null,
+          longitude: null,
+          thumbnailUrl: undefined,
+        };
+      }),
+    [candidates],
   );
+  const resultStatus = getRecentPlaceResultStatus(sourceStatus, candidateCards);
   const selectableIds = useMemo(
-    () => candidateCards.map((candidate) => candidate.id),
+    () => candidateCards.map((candidate) => candidate.id).filter(Boolean),
     [candidateCards],
   );
   const selectedCount = selectedIds.length;
@@ -126,6 +185,8 @@ export default function RecentPlacesScreen() {
         })),
       });
       await queryClient.invalidateQueries({ queryKey: candidateKeys.byJob(jobId) });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.collections.all() });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.places.all() });
       return true;
     } catch {
       Alert.alert('처리 실패', '장소 후보를 처리하지 못했어요. 잠시 후 다시 시도해주세요.');
@@ -189,22 +250,35 @@ export default function RecentPlacesScreen() {
         />
       ) : isAnalysisWaiting ? (
         <EmptyState description="끝나면 알려드릴게요." title="분석 중입니다" />
-      ) : analysisFailed ? (
+      ) : resultStatus === 'failed' || analysisFailed ? (
         <EmptyState
-          description="링크를 다시 제출하거나 잠시 후 다시 시도해주세요."
-          title="분석에 실패했습니다"
+          description="다시 제출하거나 잠시 후 시도해주세요."
+          title="링크 분석에 실패했어요"
         />
-      ) : candidateCards.length === 0 ? (
-        <EmptyState description={emptyCandidateDescription} title={emptyCandidateTitle} />
+      ) : resultStatus === 'no_candidates' ? (
+        <EmptyState
+          description="다른 링크를 공유하거나 직접 장소를 추가해보세요."
+          title="분석은 완료됐지만 장소를 찾지 못했어요"
+        />
+      ) : resultStatus === null ? (
+        <EmptyState
+          description="URL을 공유하거나 제출하면 분석된 장소 후보가 이곳에 표시됩니다."
+          title="분석된 장소 후보가 없습니다"
+        />
       ) : (
         candidateCards.map((candidate) => (
           <Pressable
             key={candidate.id}
             style={[styles.card, selectedIds.includes(candidate.id) && styles.selectedCard]}
             onPress={() => {
-              router.push(
-                `/places/${candidate.placeId}?entry=candidate&candidateId=${candidate.id}`,
-              );
+              if (resultStatus === 'places_resolved' && candidate.placeId) {
+                router.push(
+                  `/places/${candidate.placeId}?entry=candidate&candidateId=${candidate.id}`,
+                );
+                return;
+              }
+
+              toggleCandidate(candidate.id);
             }}
           >
             <View style={styles.cardPreview}>
@@ -234,7 +308,7 @@ export default function RecentPlacesScreen() {
       <View style={styles.bottomActions}>
         <CandidateActionButton
           disabled={selectedCount === 0 || isMutating}
-          label="플레이스에 추가"
+          label="수락"
           onPress={() => {
             void finishToHome();
           }}
@@ -243,7 +317,7 @@ export default function RecentPlacesScreen() {
         />
         <CandidateActionButton
           disabled={selectedCount === 0 || isMutating}
-          label="삭제"
+          label="거절"
           onPress={() => {
             void deleteSelected();
           }}

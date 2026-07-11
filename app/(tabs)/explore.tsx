@@ -13,6 +13,7 @@ import {
 } from '@/src/components/layout';
 import { CardGridSkeleton } from '@/src/components/LoadingSkeleton';
 import { AppChip } from '@/src/components/ui';
+import { useRefreshLatestExtractionResult } from '@/src/features/extraction/useRefreshLatestExtractionResult';
 import { PlaceCard } from '@/src/features/places/components/PlaceCard';
 import { getPlaceCountryLabel } from '@/src/features/places/viewModel';
 import { useMinimumLoading } from '@/src/hooks/useMinimumLoading';
@@ -22,6 +23,7 @@ export default function ExploreScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
   const discoverQuery = useDiscoverPlacesQuery();
+  const refreshLatestExtractionResult = useRefreshLatestExtractionResult();
   const isInitialLoading = useMinimumLoading(discoverQuery.isPending && !discoverQuery.data);
   const recommendations = discoverQuery.data?.results ?? [];
   return (
@@ -30,7 +32,7 @@ export default function ExploreScreen() {
         applyBottomInset
         contentContainerStyle={styles.container}
         insetSpacing={theme.spacing.xxl}
-        onRefresh={() => discoverQuery.refetch()}
+        onRefresh={() => Promise.all([discoverQuery.refetch(), refreshLatestExtractionResult()])}
       >
         <ScreenHeader
           meta={<DevScreenHeader screenName="둘러보기" screenNumber="S-10" />}

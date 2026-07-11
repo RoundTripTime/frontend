@@ -99,11 +99,15 @@ export function hasResolvedCandidatePlace(
   return Boolean(candidate.place);
 }
 
+export function getPlaceCandidateId(candidate: PlaceCandidate) {
+  return candidate.candidate_id ?? candidate.id ?? '';
+}
+
 export function createPlaceCandidateCardViewModel(
   candidate: ResolvedPlaceCandidate,
 ): PlaceCandidateCardViewModel {
   return {
-    id: candidate.candidate_id,
+    id: getPlaceCandidateId(candidate),
     placeId: candidate.place.place_id,
     name: candidate.place.canonical_name,
     category: candidate.category,

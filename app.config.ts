@@ -41,6 +41,7 @@ const androidConfig: NonNullable<ExpoConfig['android']> & { usesCleartextTraffic
     monochromeImage: './assets/images/android-icon-monochrome.png',
   },
   edgeToEdgeEnabled: true,
+  googleServicesFile: './google-services.json',
   predictiveBackGestureEnabled: false,
   permissions: ['INTERNET'],
   usesCleartextTraffic: usesCleartextApiTraffic,

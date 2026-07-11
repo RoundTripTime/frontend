@@ -5,6 +5,7 @@ import type { JobStatus, SourceType } from '../sourceLinks/types';
 export type CandidateStatus = 'proposed' | 'accepted' | 'rejected' | 'edited';
 
 export type PlaceCandidate = {
+  id?: ID;
   candidate_id: ID;
   candidate_name: string;
   category: string;

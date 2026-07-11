@@ -728,7 +728,7 @@ Authorization: Bearer <access_token>
 
 ---
 
-## 7. 플레이스 (Place Collections)
+## 7. 콜렉션 (Collections)
 
 > 앱 내 “플레이스” 탭 (S-06). 장소를 지역·주제별로 묶는 사용자 정의 컬렉션.
 > 
@@ -2108,15 +2108,13 @@ Agent에 메시지를 전송하고 Tool 실행 결과를 반환한다. (S-09 화
 | 필드 | 타입 | 설명 |
 | --- | --- | --- |
 | ad_session_id | string | 광고 세션 고유 ID. complete 호출 시 필요 |
-| ad_url | string | 광고 재생 URL |
 | expires_at | string | 세션 만료 일시. 만료 전 complete 호출 필요 (ISO 8601) |
 | viewed_today | integer | 오늘 시청 완료한 광고 수 (이번 건 미포함) |
-| required_for_credit | integer | 크레딧 1개 적립에 필요한 총 시청 수 (항상 5) |
+| required_for_credit | integer | 크레딧 1개 적립에 필요한 총 시청 수 (5) |
 
 ```json
 {
   "ad_session_id": "uuid",
-  "ad_url": "https://ads.example.com/watch?token=abc123",
   "expires_at": "2024-12-01T10:05:00Z",
   "viewed_today": 2,
   "required_for_credit": 5

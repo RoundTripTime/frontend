@@ -2,7 +2,7 @@ import { DefaultTheme, ThemeProvider, type Theme } from '@react-navigation/nativ
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,7 +14,16 @@ import { ErrorBoundary } from '@/src/components/ErrorBoundary';
 import { ExtractionJobWatcher } from '@/src/features/extraction/ExtractionJobWatcher';
 import { installGlobalHandlers } from '@/src/lib/globalHandlers';
 import { queryClient } from '@/src/lib/queryClient';
-import { installAuthInterceptors, useAuthStore } from '@/src/stores/auth';
+import {
+  addDeviceTokenRegistrationListener,
+  registerCurrentDeviceToken,
+  unregisterCurrentDeviceToken,
+} from '@/src/services/pushNotifications';
+import {
+  installAuthInterceptors,
+  setBeforeAuthSessionClearHandler,
+  useAuthStore,
+} from '@/src/stores/auth';
 import { appThemes } from '@/src/theme';
 
 installGlobalHandlers();
@@ -53,6 +62,7 @@ export default function RootLayout() {
               <QueryClientProvider client={queryClient}>
                 <AuthGate />
                 <AuthenticatedExtractionJobWatcher />
+                <AuthenticatedDeviceTokenRegistrar />
                 <StatusBar style={appTheme.colorScheme === 'dark' ? 'dark' : 'auto'} />
               </QueryClientProvider>
             </ThemeProvider>
@@ -160,6 +170,58 @@ function AuthenticatedExtractionJobWatcher() {
   }
 
   return <ExtractionJobWatcher />;
+}
+
+function AuthenticatedDeviceTokenRegistrar() {
+  const status = useAuthStore((state) => state.status);
+  const previousStatusRef = useRef(status);
+  const unregisteredForSessionRef = useRef(false);
+
+  useEffect(() => {
+    setBeforeAuthSessionClearHandler(async () => {
+      unregisteredForSessionRef.current = true;
+      await unregisterCurrentDeviceToken();
+    });
+
+    return () => {
+      setBeforeAuthSessionClearHandler(null);
+    };
+  }, []);
+
+  useEffect(() => {
+    const previousStatus = previousStatusRef.current;
+    previousStatusRef.current = status;
+
+    if (
+      previousStatus === 'authenticated' &&
+      status === 'unauthenticated' &&
+      !unregisteredForSessionRef.current
+    ) {
+      unregisteredForSessionRef.current = true;
+      void unregisterCurrentDeviceToken();
+    }
+
+    if (status !== 'authenticated') {
+      return;
+    }
+
+    unregisteredForSessionRef.current = false;
+    void registerCurrentDeviceToken({ showToast: false });
+  }, [status]);
+
+  useEffect(() => {
+    if (status !== 'authenticated') {
+      return;
+    }
+
+    const subscription = addDeviceTokenRegistrationListener({ showToast: false });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [status]);
+
+  return null;
 }
 
 const styles = StyleSheet.create({

@@ -14,6 +14,7 @@ import {
 } from '@/src/components/layout';
 import { CardGridSkeleton } from '@/src/components/LoadingSkeleton';
 import { AppChip } from '@/src/components/ui';
+import { useRefreshLatestExtractionResult } from '@/src/features/extraction/useRefreshLatestExtractionResult';
 import { PlaceCard } from '@/src/features/places/components/PlaceCard';
 import { createPlaceCardViewModel, type PlaceRegionFilter } from '@/src/features/places/viewModel';
 import { useMinimumLoading } from '@/src/hooks/useMinimumLoading';
@@ -29,6 +30,7 @@ export default function HomeScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
   const [selectedTab, setSelectedTab] = useState<(typeof placeTabs)[number]>('전체');
+  const refreshLatestExtractionResult = useRefreshLatestExtractionResult();
   const pendingCandidateCount = usePlaceCandidateStore(selectPendingPlaceCandidateCount);
   const collectionsQuery = useCollectionsQuery();
   const defaultCollectionId =
@@ -56,7 +58,13 @@ export default function HomeScreen() {
         applyBottomInset
         contentContainerStyle={styles.container}
         insetSpacing={theme.spacing.xxl * 3}
-        onRefresh={() => Promise.all([collectionsQuery.refetch(), collectionPlacesQuery.refetch()])}
+        onRefresh={() =>
+          Promise.all([
+            collectionsQuery.refetch(),
+            collectionPlacesQuery.refetch(),
+            refreshLatestExtractionResult(),
+          ])
+        }
       >
         <ScreenHeader
           action={

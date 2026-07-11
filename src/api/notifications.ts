@@ -1,7 +1,12 @@
 import { apiClient } from './client';
 
 import type { QueryParams } from './common';
-import type { NotificationsResponse, ReadNotificationResponse } from './notifications/types';
+import type {
+  NotificationsResponse,
+  ReadNotificationResponse,
+  RegisterDeviceTokenRequest,
+  UnregisterDeviceTokenRequest,
+} from './notifications/types';
 
 export async function listNotifications(params?: QueryParams) {
   const { data } = await apiClient.get<NotificationsResponse>('/notifications', { params });
@@ -13,4 +18,12 @@ export async function markNotificationRead(notificationId: string) {
     `/notifications/${notificationId}/read`,
   );
   return data;
+}
+
+export async function registerDeviceToken(payload: RegisterDeviceTokenRequest) {
+  await apiClient.post('/notifications/device-tokens', payload);
+}
+
+export async function unregisterDeviceToken(payload: UnregisterDeviceTokenRequest) {
+  await apiClient.delete('/notifications/device-tokens', { data: payload });
 }

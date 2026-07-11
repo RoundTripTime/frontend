@@ -78,7 +78,7 @@ erDiagram
 | 컬럼 | 타입 | 설명 |
 | --- | --- | --- |
 | id | UUID | PK |
-| user_id | UUID | FK([users.id](http://users.id)) |
+| user_id | UUID | FK(users.id) |
 | source_type | enum('youtube_short','instagram_reel') | 플랫폼 타입 |
 | url | text | 제출 URL |
 | normalized_url_hash | varchar | 중복 방지용 |
@@ -196,7 +196,7 @@ LIMIT 10;
 | 컬럼 | 타입 | 설명 |
 | --- | --- | --- |
 | id | UUID | PK |
-| user_id | UUID | FK([users.id](http://users.id)) |
+| user_id | UUID | FK(users.id) |
 | title | varchar | 플랜 제목 |
 | destination_region | varchar | 여행지 |
 | start_date | date | 출발일 |
@@ -211,26 +211,19 @@ LIMIT 10;
 | 컬럼 | 타입 | 설명 |
 | --- | --- | --- |
 | id | UUID | PK |
-| itinerary_id | UUID | FK([itineraries.id](http://itineraries.id)) |
-| place_id | UUID | FK([places.id](http://places.id)) |
+| itinerary_id | UUID | FK(itineraries.id) |
+| place_id | UUID | FK(places.id) |
 | day_index | integer | 여행 일차. null이면 미배치 풀 |
 | sort_order | integer | 해당 일차 내 순서. null이면 미배치 |
-| start_time | time | 방문 시작 시간. nullable |
-| end_time | time | 방문 종료 시간. nullable |
-| planned_duration_minutes | integer | `start_time`~`end_time` 기준 자동 계산된 체류 시간(분). nullable |
-| source_candidate_id | UUID | FK(place_[candidates.id](http://candidates.id)). nullable |
-
-> V11 마이그레이션에서 `itinerary_items.start_time`, `itinerary_items.end_time` 컬럼을 추가한다.
-> 장소 추가/수정 Request DTO는 `start_time`, `end_time`을 받을 수 있다.
-> 두 시간이 모두 지정되면 `planned_duration_minutes`는 서버가 자동 계산한다. 예: `09:00`~`11:00` → `120`, `14:00`~`15:30` → `90`.
-> 시간이 지정되지 않으면 `start_time`, `end_time`, `planned_duration_minutes`는 모두 `null`이다.
+| planned_duration_minutes | integer | 예상 체류 시간(분). nullable |
+| source_candidate_id | UUID | FK(place_candidates.id). nullable |
 
 ### community_posts
 
 | 컬럼 | 타입 | 설명 |
 | --- | --- | --- |
 | id | UUID | PK |
-| user_id | UUID | FK([users.id](http://users.id)) |
+| user_id | UUID | FK(users.id) |
 | body | text | 본문 |
 | visibility | enum('public','followers') | 공개 범위 |
 | like_count | integer | 비동기 업데이트 |
@@ -241,22 +234,22 @@ LIMIT 10;
 
 | 컬럼 | 타입 | 설명 |
 | --- | --- | --- |
-| post_id | UUID | FK(community_[posts.id](http://posts.id)) |
-| place_id | UUID | FK([places.id](http://places.id)) |
+| post_id | UUID | FK(community_posts.id) |
+| place_id | UUID | FK(places.id) |
 
 ### post_tagged_itineraries
 
 | 컬럼 | 타입 | 설명 |
 | --- | --- | --- |
-| post_id | UUID | FK(community_[posts.id](http://posts.id)) |
-| itinerary_id | UUID | FK([itineraries.id](http://itineraries.id)) |
+| post_id | UUID | FK(community_posts.id) |
+| itinerary_id | UUID | FK(itineraries.id) |
 
 ### post_likes
 
 | 컬럼 | 타입 | 설명 |
 | --- | --- | --- |
-| post_id | UUID | FK(community_[posts.id](http://posts.id)) |
-| user_id | UUID | FK([users.id](http://users.id)) |
+| post_id | UUID | FK(community_posts.id) |
+| user_id | UUID | FK(users.id) |
 | created_at | timestamptz |  |
 
 ### post_comments
@@ -264,8 +257,8 @@ LIMIT 10;
 | 컬럼 | 타입 | 설명 |
 | --- | --- | --- |
 | id | UUID | PK |
-| post_id | UUID | FK(community_[posts.id](http://posts.id)) |
-| user_id | UUID | FK([users.id](http://users.id)) |
+| post_id | UUID | FK(community_posts.id) |
+| user_id | UUID | FK(users.id) |
 | body | text | 본문 |
 | created_at | timestamptz |  |
 
@@ -274,8 +267,8 @@ LIMIT 10;
 | 컬럼 | 타입 | 설명 |
 | --- | --- | --- |
 | id | UUID | PK |
-| place_id | UUID | FK([places.id](http://places.id)) |
-| user_id | UUID | FK([users.id](http://users.id)) |
+| place_id | UUID | FK(places.id) |
+| user_id | UUID | FK(users.id) |
 | rating | smallint | 1~5 |
 | body | text | 리뷰 내용 |
 | created_at | timestamptz |  |
@@ -284,8 +277,8 @@ LIMIT 10;
 
 | 컬럼 | 타입 | 설명 |
 | --- | --- | --- |
-| follower_id | UUID | FK([users.id](http://users.id)) — 팔로우하는 사람 |
-| following_id | UUID | FK([users.id](http://users.id)) — 팔로우 대상 |
+| follower_id | UUID | FK(users.id) — 팔로우하는 사람 |
+| following_id | UUID | FK(users.id) — 팔로우 대상 |
 | created_at | timestamptz |  |
 
 ### notifications
@@ -293,9 +286,9 @@ LIMIT 10;
 | 컬럼 | 타입 | 설명 |
 | --- | --- | --- |
 | id | UUID | PK |
-| user_id | UUID | FK([users.id](http://users.id)) |
+| user_id | UUID | FK(users.id) |
 | type | enum('job_completed','job_failed') | 알림 종류 |
-| job_id | UUID | FK(extraction_[jobs.id](http://jobs.id)). nullable |
+| job_id | UUID | FK(extraction_jobs.id). nullable |
 | message | varchar | 알림 표시 메시지 |
 | is_read | boolean | 읽음 여부. 기본값: false |
 | created_at | timestamptz | 생성 시각 |
@@ -308,8 +301,8 @@ LIMIT 10;
 | 컬럼 | 타입 | 설명 |
 | --- | --- | --- |
 | id | UUID | PK |
-| itinerary_id | UUID | FK([itineraries.id](http://itineraries.id)). UNIQUE (플랜당 마켓 등록 1건) |
-| user_id | UUID | FK([users.id](http://users.id)). 등록자 |
+| itinerary_id | UUID | FK(itineraries.id). UNIQUE (플랜당 마켓 등록 1건) |
+| user_id | UUID | FK(users.id). 등록자 |
 | title | varchar | 마켓 노출 제목 (최대 50자) |
 | description | text | 플랜 소개 (최대 500자) |
 | highlight | varchar | 한 줄 요약 (최대 100자) |
@@ -325,13 +318,13 @@ LIMIT 10;
 
 ### credit_histories
 
-> 크레딧 적립/차감 이력. [users.credit](http://users.credit)_balance는 이 테이블의 누적 합산과 항상 동기화된다.
+> 크레딧 적립/차감 이력. users.credit_balance는 이 테이블의 누적 합산과 항상 동기화된다.
 > 
 
 | 컬럼 | 타입 | 설명 |
 | --- | --- | --- |
 | id | UUID | PK |
-| user_id | UUID | FK([users.id](http://users.id)) |
+| user_id | UUID | FK(users.id) |
 | credit_type | enum('ad_view','ota_booking','plan_sale','plan_purchase','ota_payment') | 크레딧 종류 |
 | amount | integer | 변동량. 적립은 양수, 차감은 음수 |
 | balance_after | integer | 트랜잭션 후 잔액 스냅샷 |
@@ -346,7 +339,7 @@ LIMIT 10;
 | 컬럼 | 타입 | 설명 |
 | --- | --- | --- |
 | id | UUID | PK |
-| user_id | UUID | FK([users.id](http://users.id)) |
+| user_id | UUID | FK(users.id) |
 | expires_at | timestamptz | 세션 만료 시각. 만료 전 complete 호출 필요 |
 | is_completed | boolean | 시청 완료 여부. 기본값: false |
 | created_at | timestamptz | 세션 생성 시각 |

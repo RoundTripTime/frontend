@@ -18,6 +18,26 @@ import { configureExtractionNotifications, notifyExtractionCompleted } from './n
 const waitingStatuses = new Set(['pending', 'processing']);
 const DEVELOPMENT_JOB_ID = 'mock-job';
 
+function routeNotificationResponse(response: Notifications.NotificationResponse) {
+  const data = response.notification.request.content.data;
+  const href = data?.href;
+  const jobId = data?.job_id ?? data?.jobId;
+
+  console.log('[Notifications] response data', data);
+
+  if (typeof jobId === 'string' && jobId.length > 0) {
+    router.push(`/places/recent?jobId=${encodeURIComponent(jobId)}`);
+    return;
+  }
+
+  if (typeof href === 'string' && href.startsWith('/places/recent')) {
+    router.push('/places/recent');
+    return;
+  }
+
+  router.push('/places/recent');
+}
+
 // TODO(server-push): 서버 완료 push가 도입되면 foreground polling은 fallback/debug 용도로 축소한다.
 export function ExtractionJobWatcher() {
   const jobId = usePlaceCandidateStore((state) => state.jobId);
@@ -30,13 +50,14 @@ export function ExtractionJobWatcher() {
     void configureExtractionNotifications();
     void registerExtractionBackgroundTask();
 
-    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
-      const href = response.notification.request.content.data?.href;
-
-      if (href === '/places/recent') {
-        router.push('/places/recent');
+    void Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (response) {
+        routeNotificationResponse(response);
       }
     });
+
+    const subscription =
+      Notifications.addNotificationResponseReceivedListener(routeNotificationResponse);
 
     return () => {
       subscription.remove();

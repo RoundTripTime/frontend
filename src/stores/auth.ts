@@ -38,6 +38,7 @@ type AuthState = {
 
 let interceptorsInstalled = false;
 let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+let beforeSessionClearHandler: (() => Promise<void>) | null = null;
 
 const authTestSecret = process.env.EXPO_PUBLIC_AUTH_TEST_SECRET?.trim();
 const clearStoredTokensOnBoot = process.env.EXPO_PUBLIC_CLEAR_STORED_TOKENS_ON_BOOT === 'true';
@@ -47,6 +48,14 @@ function clearRefreshTimer() {
     clearTimeout(refreshTimer);
     refreshTimer = null;
   }
+}
+
+export function setBeforeAuthSessionClearHandler(handler: (() => Promise<void>) | null) {
+  beforeSessionClearHandler = handler;
+}
+
+async function runBeforeSessionClearHandler() {
+  await beforeSessionClearHandler?.();
 }
 
 async function refreshAccessTokenWithStore(refreshTokenValue: string) {
@@ -83,6 +92,8 @@ function scheduleTokenRefresh(accessToken: string) {
     return;
   }
 
+  // TODO : 한시간 뒤에 FCM 발급은 맞으나 그 전에 job 종료시 status 무관하게 리턴함
+  // 알림은 그냥 사용자가 잊었을때(한시간 뒤) 주는걸로 상정하고 주는 것
   const refreshAt = expiresAt - Date.now() - 60_000;
 
   if (refreshAt <= 0) {
@@ -111,6 +122,8 @@ async function refreshAccessTokenSoon() {
 }
 
 async function bootstrapWithTestToken() {
+  // TODO(auth): Test-token bootstrap is for development/release verification only.
+  // Remove this fallback when real social login is the only supported production path.
   if (!authTestSecret) {
     return null;
   }
@@ -241,17 +254,20 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
   logout: async () => {
+    await runBeforeSessionClearHandler();
     await logoutSession();
     clearRefreshTimer();
     set({ status: 'unauthenticated', user: null, errorMessage: null });
   },
   deleteAccount: async () => {
+    await runBeforeSessionClearHandler();
     await deleteMe();
     await logoutSession();
     clearRefreshTimer();
     set({ status: 'unauthenticated', user: null, errorMessage: null });
   },
   clearSession: async () => {
+    await runBeforeSessionClearHandler();
     await clearStoredTokens();
     clearRefreshTimer();
     set({ status: 'unauthenticated', user: null });
