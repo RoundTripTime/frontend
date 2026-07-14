@@ -1,4 +1,12 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  StyleSheet,
+  Image,
+  Text,
+  TouchableOpacity,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 
 import { useAppTheme, type AppTheme } from '@/src/theme';
 
@@ -6,18 +14,38 @@ export type PlaceCardProps = {
   category: string;
   countryLabel: string;
   name: string;
+  onLongPress?: () => void;
   onPress?: () => void;
+  style?: StyleProp<ViewStyle>;
+  thumbnailUrl?: string | null;
 };
 
-export function PlaceCard({ category, countryLabel, name, onPress }: PlaceCardProps) {
+export function PlaceCard({
+  category,
+  countryLabel,
+  name,
+  onLongPress,
+  onPress,
+  style,
+  thumbnailUrl,
+}: PlaceCardProps) {
   const theme = useAppTheme();
   const styles = createStyles(theme);
 
   return (
-    <TouchableOpacity activeOpacity={0.84} style={styles.card} onPress={onPress}>
-      <View style={styles.thumbnail} />
+    <TouchableOpacity
+      activeOpacity={0.84}
+      style={[styles.card, style]}
+      onLongPress={onLongPress}
+      onPress={onPress}
+    >
+      {thumbnailUrl ? (
+        <Image source={{ uri: thumbnailUrl }} style={styles.thumbnail} />
+      ) : (
+        <View style={styles.thumbnail} />
+      )}
       <Text style={styles.categoryBadge}>{category}</Text>
-      <Text numberOfLines={2} style={styles.title}>
+      <Text ellipsizeMode="tail" numberOfLines={1} style={styles.title}>
         {name}
       </Text>
       <Text style={styles.meta}>{countryLabel}</Text>
@@ -72,6 +100,7 @@ const createStyles = (theme: AppTheme) =>
       borderRadius: 8,
       borderWidth: 1,
       gap: 8,
+      height: 194,
       padding: 12,
       width: '48%',
     },
@@ -88,5 +117,5 @@ const createStyles = (theme: AppTheme) =>
     },
     meta: { color: theme.semantic.textMuted, fontSize: 13 },
     thumbnail: { backgroundColor: theme.semantic.mediaPlaceholder, borderRadius: 6, height: 96 },
-    title: { color: theme.semantic.text, fontSize: 16, fontWeight: '800' },
+    title: { color: theme.semantic.text, fontSize: 16, fontWeight: '800', minHeight: 20 },
   });

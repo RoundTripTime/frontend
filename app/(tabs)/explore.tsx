@@ -1,6 +1,12 @@
-import { Link, type Href } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { router } from 'expo-router';
+import { useMemo, useState } from 'react';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import {
+  collectionKeys,
+  useAddCollectionPlaceMutation,
+  useCollectionsQuery,
+} from '@/src/api/collections/hooks';
 import { useDiscoverPlacesQuery } from '@/src/api/places/hooks';
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
 import { EmptyState } from '@/src/components/EmptyState';
@@ -17,21 +23,65 @@ import { useRefreshLatestExtractionResult } from '@/src/features/extraction/useR
 import { PlaceCard } from '@/src/features/places/components/PlaceCard';
 import { getPlaceCountryLabel } from '@/src/features/places/viewModel';
 import { useMinimumLoading } from '@/src/hooks/useMinimumLoading';
+import { queryClient } from '@/src/lib/queryClient';
 import { useAppTheme, type AppTheme } from '@/src/theme';
+
+const categoryFilters = ['관광명소', '맛집', '카페', '숙박'];
+const countryFilters = [
+  { code: 'KR', label: '한국' },
+  { code: 'JP', label: '일본' },
+  { code: 'SEA', label: '동남아' },
+];
 
 export default function ExploreScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
-  const discoverQuery = useDiscoverPlacesQuery();
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const discoverParams = useMemo(
+    () => ({
+      category: selectedCategory,
+      country_code: selectedCountry,
+    }),
+    [selectedCategory, selectedCountry],
+  );
+  const discoverQuery = useDiscoverPlacesQuery(discoverParams);
+  const collectionsQuery = useCollectionsQuery();
+  const defaultCollectionId =
+    collectionsQuery.data?.items.find((collection) => collection.is_default)?.collection_id ??
+    collectionsQuery.data?.items[0]?.collection_id ??
+    '';
+  const addCollectionPlaceMutation = useAddCollectionPlaceMutation(defaultCollectionId);
   const refreshLatestExtractionResult = useRefreshLatestExtractionResult();
   const isInitialLoading = useMinimumLoading(discoverQuery.isPending && !discoverQuery.data);
   const recommendations = discoverQuery.data?.results ?? [];
+
+  const resetFilters = () => {
+    setSelectedCategory(null);
+    setSelectedCountry(null);
+  };
+
+  const savePlace = async (placeId: string) => {
+    if (!defaultCollectionId) {
+      Alert.alert('저장 실패', '저장할 플레이스를 찾지 못했어요.');
+      return;
+    }
+
+    try {
+      await addCollectionPlaceMutation.mutateAsync({ place_id: placeId });
+      await queryClient.invalidateQueries({ queryKey: collectionKeys.places(defaultCollectionId) });
+      Alert.alert('저장 완료', '내 플레이스에 추가했어요.');
+    } catch {
+      Alert.alert('저장 실패', '장소를 저장하지 못했어요. 잠시 후 다시 시도해주세요.');
+    }
+  };
+
   return (
     <ScreenRoot>
       <ScreenScroll
         applyBottomInset
         contentContainerStyle={styles.container}
-        insetSpacing={theme.spacing.xxl}
+        insetSpacing={theme.spacing.md}
         onRefresh={() => Promise.all([discoverQuery.refetch(), refreshLatestExtractionResult()])}
       >
         <ScreenHeader
@@ -43,10 +93,37 @@ export default function ExploreScreen() {
           기능: 카테고리와 국가 필터로 취향 기반 추천 장소를 탐색하고 저장한다.
           가능한 다음 이동 화면: S-05
         */}
-        <ScreenControls contentContainerStyle={styles.chips}>
-          {['전체', '관광명소', '맛집', '카페', '숙박', '한국', '일본', '동남아'].map((label) => (
-            <AppChip key={label} style={styles.compactChip} textStyle={styles.compactChipText}>
+        <ScreenControls contentContainerStyle={styles.chips} style={styles.controls}>
+          <AppChip
+            selected={!selectedCategory && !selectedCountry}
+            style={styles.compactChip}
+            textStyle={styles.compactChipText}
+            onPress={resetFilters}
+          >
+            전체
+          </AppChip>
+          {categoryFilters.map((label) => (
+            <AppChip
+              key={label}
+              selected={selectedCategory === label}
+              style={styles.compactChip}
+              textStyle={styles.compactChipText}
+              onPress={() => setSelectedCategory(selectedCategory === label ? null : label)}
+            >
               {label}
+            </AppChip>
+          ))}
+          {countryFilters.map((country) => (
+            <AppChip
+              key={country.code}
+              selected={selectedCountry === country.code}
+              style={styles.compactChip}
+              textStyle={styles.compactChipText}
+              onPress={() =>
+                setSelectedCountry(selectedCountry === country.code ? null : country.code)
+              }
+            >
+              {country.label}
             </AppChip>
           ))}
         </ScreenControls>
@@ -56,22 +133,30 @@ export default function ExploreScreen() {
           ) : recommendations.length === 0 ? (
             <EmptyState
               description="새로운 추천 장소가 준비되면 이곳에 표시됩니다."
-              title="아직 장소가 없습니다"
+              title="지금 인기있는 장소"
             />
           ) : (
             <View style={styles.grid}>
               {recommendations.map((place) => (
-                <Link
-                  key={place.place_id}
-                  href={`/places/${place.place_id}?entry=explore` as Href}
-                  asChild
-                >
+                <View key={place.place_id} style={styles.placeItem}>
                   <PlaceCard
                     category={place.category}
                     countryLabel={getPlaceCountryLabel(place.country_code)}
                     name={place.canonical_name}
+                    style={styles.placeCard}
+                    thumbnailUrl={place.thumbnail_url}
+                    onPress={() => router.push(`/places/${place.place_id}?entry=explore`)}
                   />
-                </Link>
+                  <Pressable
+                    disabled={addCollectionPlaceMutation.isPending}
+                    style={styles.saveButton}
+                    onPress={() => {
+                      void savePlace(place.place_id);
+                    }}
+                  >
+                    <Text style={styles.saveButtonText}>저장</Text>
+                  </Pressable>
+                </View>
               ))}
             </View>
           )}
@@ -84,20 +169,36 @@ export default function ExploreScreen() {
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: {
-      gap: theme.spacing.sm,
-      paddingBottom: theme.spacing.md,
+      gap: theme.spacing.xs,
+      paddingBottom: theme.spacing.xs,
       paddingHorizontal: theme.spacing.md,
-      paddingTop: theme.spacing.xs,
+      paddingTop: 0,
     },
-    body: { gap: theme.spacing.sm },
-    chips: { flexDirection: 'row', gap: theme.spacing.sm, paddingRight: theme.spacing.md },
+    body: { gap: theme.spacing.xs },
+    controls: {
+      flexBasis: undefined,
+      height: 34,
+      maxHeight: 34,
+      minHeight: 34,
+    },
+    chips: { flexDirection: 'row', gap: theme.spacing.xs, paddingRight: theme.spacing.sm },
     compactChip: {
-      minWidth: 68,
+      height: 30,
+      minWidth: 62,
       paddingHorizontal: theme.spacing.sm,
-      paddingVertical: theme.spacing.xs,
+      paddingVertical: 0,
     },
     compactChipText: {
       fontSize: 12,
     },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
+    placeItem: { gap: theme.spacing.xs, width: '48%' },
+    placeCard: { width: '100%' },
+    saveButton: {
+      alignItems: 'center',
+      backgroundColor: theme.semantic.primarySoft,
+      borderRadius: 8,
+      paddingVertical: theme.spacing.xs,
+    },
+    saveButtonText: { color: theme.semantic.primaryDeep, fontWeight: '800' },
   });

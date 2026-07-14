@@ -103,12 +103,16 @@ export function getPlaceCandidateId(candidate: PlaceCandidate) {
   return candidate.candidate_id ?? candidate.id ?? '';
 }
 
+export function getPlaceId(place: PlaceSummary) {
+  return place.place_id ?? place.id ?? '';
+}
+
 export function createPlaceCandidateCardViewModel(
   candidate: ResolvedPlaceCandidate,
 ): PlaceCandidateCardViewModel {
   return {
     id: getPlaceCandidateId(candidate),
-    placeId: candidate.place.place_id,
+    placeId: getPlaceId(candidate.place),
     name: candidate.place.canonical_name,
     category: candidate.category,
     countryLabel: getCountryLabel(candidate.place.country_code),

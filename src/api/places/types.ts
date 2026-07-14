@@ -4,6 +4,7 @@ export type PlaceCategory = '관광명소' | '맛집' | '카페' | '숙박' | '�
 export type ThumbnailSource = 'flickr' | 'wikimedia' | 'google_places' | string;
 
 export type PlaceSummary = {
+  id?: ID;
   place_id: ID;
   canonical_name: string;
   category: PlaceCategory;

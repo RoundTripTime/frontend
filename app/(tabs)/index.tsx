@@ -1,8 +1,17 @@
-import { Link, type Href } from 'expo-router';
+import { Link, router, type Href } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { useCollectionPlacesQuery, useCollectionsQuery } from '@/src/api/collections/hooks';
+import {
+  addCollectionPlace,
+  getCollectionShare,
+  removeCollectionPlace,
+} from '@/src/api/collections';
+import {
+  collectionKeys,
+  useCollectionPlacesQuery,
+  useCollectionsQuery,
+} from '@/src/api/collections/hooks';
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
 import {
   ScreenBody,
@@ -18,6 +27,7 @@ import { useRefreshLatestExtractionResult } from '@/src/features/extraction/useR
 import { PlaceCard } from '@/src/features/places/components/PlaceCard';
 import { createPlaceCardViewModel, type PlaceRegionFilter } from '@/src/features/places/viewModel';
 import { useMinimumLoading } from '@/src/hooks/useMinimumLoading';
+import { queryClient } from '@/src/lib/queryClient';
 import {
   selectPendingPlaceCandidateCount,
   usePlaceCandidateStore,
@@ -33,10 +43,15 @@ export default function HomeScreen() {
   const refreshLatestExtractionResult = useRefreshLatestExtractionResult();
   const pendingCandidateCount = usePlaceCandidateStore(selectPendingPlaceCandidateCount);
   const collectionsQuery = useCollectionsQuery();
+  const defaultCollection = collectionsQuery.data?.items.find(
+    (collection) => collection.is_default,
+  );
   const defaultCollectionId =
-    collectionsQuery.data?.items.find((collection) => collection.is_default)?.collection_id ??
-    collectionsQuery.data?.items[0]?.collection_id ??
-    '';
+    defaultCollection?.collection_id ?? collectionsQuery.data?.items[0]?.collection_id ?? '';
+  const otherCollections =
+    collectionsQuery.data?.items.filter(
+      (collection) => collection.collection_id !== defaultCollectionId,
+    ) ?? [];
   const collectionPlacesQuery = useCollectionPlacesQuery(defaultCollectionId);
   const isInitialQueryLoading =
     (collectionsQuery.isPending && !collectionsQuery.data) ||
@@ -51,6 +66,92 @@ export default function HomeScreen() {
     () => placeCards.filter((place) => selectedTab === '전체' || place.region === selectedTab),
     [placeCards, selectedTab],
   );
+
+  const invalidateCollectionPlaces = async (...collectionIds: string[]) => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: collectionKeys.lists }),
+      ...collectionIds
+        .filter(Boolean)
+        .map((collectionId) =>
+          queryClient.invalidateQueries({ queryKey: collectionKeys.places(collectionId) }),
+        ),
+    ]);
+  };
+
+  const shareCollection = async () => {
+    if (!defaultCollectionId) {
+      Alert.alert('공유 실패', '공유할 플레이스를 찾지 못했어요.');
+      return;
+    }
+
+    try {
+      const share = await getCollectionShare(defaultCollectionId);
+      await Share.share({ message: share.share_url });
+    } catch {
+      Alert.alert('공유 실패', '공유 링크를 가져오지 못했어요.');
+    }
+  };
+
+  const movePlace = async (placeId: string, targetCollectionId: string) => {
+    if (!defaultCollectionId) {
+      return;
+    }
+
+    try {
+      await addCollectionPlace(targetCollectionId, { place_id: placeId });
+      await removeCollectionPlace(defaultCollectionId, placeId);
+      await invalidateCollectionPlaces(defaultCollectionId, targetCollectionId);
+    } catch {
+      Alert.alert('이동 실패', '장소를 이동하지 못했어요. 잠시 후 다시 시도해주세요.');
+    }
+  };
+
+  const removePlace = async (placeId: string) => {
+    if (!defaultCollectionId) {
+      return;
+    }
+
+    try {
+      await removeCollectionPlace(defaultCollectionId, placeId);
+      await invalidateCollectionPlaces(defaultCollectionId);
+    } catch {
+      Alert.alert('삭제 실패', '장소를 삭제하지 못했어요. 잠시 후 다시 시도해주세요.');
+    }
+  };
+
+  const showMoveOptions = (placeId: string) => {
+    if (otherCollections.length === 0) {
+      Alert.alert('이동할 플레이스가 없습니다', '새 플레이스를 먼저 만들어주세요.');
+      return;
+    }
+
+    Alert.alert('다른 플레이스로 이동', '이동할 플레이스를 선택해주세요.', [
+      ...otherCollections.map((collection) => ({
+        text: collection.name,
+        onPress: () => {
+          void movePlace(placeId, collection.collection_id);
+        },
+      })),
+      { style: 'cancel' as const, text: '취소' },
+    ]);
+  };
+
+  const showPlaceActions = (place: (typeof placeCards)[number]) => {
+    Alert.alert(place.name, '장소 관리', [
+      {
+        text: '다른 플레이스로 이동',
+        onPress: () => showMoveOptions(place.id),
+      },
+      {
+        style: 'destructive',
+        text: '삭제',
+        onPress: () => {
+          void removePlace(place.id);
+        },
+      },
+      { style: 'cancel', text: '취소' },
+    ]);
+  };
 
   return (
     <ScreenRoot>
@@ -68,11 +169,20 @@ export default function HomeScreen() {
       >
         <ScreenHeader
           action={
-            <Link href={'/(share)/receive' as Href} asChild>
-              <TouchableOpacity activeOpacity={0.84} style={styles.addButton}>
-                <Text style={styles.addButtonText}>+ 추가</Text>
+            <View style={styles.headerActions}>
+              <TouchableOpacity
+                activeOpacity={0.84}
+                style={styles.secondaryButton}
+                onPress={shareCollection}
+              >
+                <Text style={styles.secondaryButtonText}>공유</Text>
               </TouchableOpacity>
-            </Link>
+              <Link href={'/(share)/receive' as Href} asChild>
+                <TouchableOpacity activeOpacity={0.84} style={styles.addButton}>
+                  <Text style={styles.addButtonText}>+ 추가</Text>
+                </TouchableOpacity>
+              </Link>
+            </View>
           }
           meta={<DevScreenHeader screenName="홈 / 내 장소" screenNumber="S-02" />}
           title="내 장소"
@@ -101,13 +211,14 @@ export default function HomeScreen() {
           ) : (
             <View style={styles.grid}>
               {filteredPlaces.map((place) => (
-                <Link key={place.id} href={`/places/${place.id}?entry=my-place` as Href} asChild>
-                  <PlaceCard
-                    category={place.category}
-                    countryLabel={place.countryLabel}
-                    name={place.name}
-                  />
-                </Link>
+                <PlaceCard
+                  key={place.id}
+                  category={place.category}
+                  countryLabel={place.countryLabel}
+                  name={place.name}
+                  onLongPress={() => showPlaceActions(place)}
+                  onPress={() => router.push(`/places/${place.id}?entry=my-place`)}
+                />
               ))}
             </View>
           )}
@@ -146,6 +257,18 @@ const createStyles = (theme: AppTheme) =>
     },
     addButtonText: {
       color: theme.semantic.onPrimary,
+      fontSize: theme.typography.size.label,
+      fontWeight: '900',
+    },
+    headerActions: { flexDirection: 'row', gap: theme.spacing.sm },
+    secondaryButton: {
+      backgroundColor: theme.semantic.surfaceMuted,
+      borderRadius: theme.radius.md,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+    },
+    secondaryButtonText: {
+      color: theme.semantic.textSecondary,
       fontSize: theme.typography.size.label,
       fontWeight: '900',
     },

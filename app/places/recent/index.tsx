@@ -17,6 +17,8 @@ import {
   useBatchUpdateCandidatesMutation,
   useJobCandidatesQuery,
 } from '@/src/api/candidates/hooks';
+import { addCollectionPlace } from '@/src/api/collections';
+import { collectionKeys, useCollectionsQuery } from '@/src/api/collections/hooks';
 import { useNotificationsQuery } from '@/src/api/notifications/hooks';
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
 import { EmptyState } from '@/src/components/EmptyState';
@@ -110,8 +112,13 @@ export default function RecentPlacesScreen() {
   )?.job_id;
   const jobId = routeJobId ?? latestNotificationJobId ?? storedJobId;
   const setAnalysisResult = usePlaceCandidateStore((state) => state.setAnalysisResult);
+  const collectionsQuery = useCollectionsQuery();
   const candidatesQuery = useJobCandidatesQuery(jobId ?? '');
   const batchUpdateCandidatesMutation = useBatchUpdateCandidatesMutation();
+  const defaultCollectionId =
+    collectionsQuery.data?.items.find((collection) => collection.is_default)?.collection_id ??
+    collectionsQuery.data?.items[0]?.collection_id ??
+    '';
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const rawCandidates = candidatesQuery.data?.candidates ?? cachedCandidates;
   const candidates = rawCandidates.filter((candidate) => candidate.status === 'proposed');
@@ -136,7 +143,7 @@ export default function RecentPlacesScreen() {
           category: candidate.category,
           countryLabel: '장소 확인 필요',
           status: candidate.status,
-          statusLabel: '확인 대기',
+          statusLabel: candidate.status === 'accepted' ? '수락됨' : '확인 대기',
           evidence: candidate.evidence,
           latitude: null,
           longitude: null,
@@ -153,6 +160,8 @@ export default function RecentPlacesScreen() {
   const selectedCount = selectedIds.length;
   const allSelected = selectableIds.length > 0 && selectedCount === selectableIds.length;
   const isMutating = batchUpdateCandidatesMutation.isPending;
+  const hasCandidateResult =
+    resultStatus === 'places_resolved' || resultStatus === 'candidates_only';
 
   useEffect(() => {
     if (candidatesQuery.data && jobId) {
@@ -194,11 +203,39 @@ export default function RecentPlacesScreen() {
     }
   };
 
+  const addSelectedPlacesToDefaultCollection = async () => {
+    if (!defaultCollectionId) {
+      return;
+    }
+
+    const selectedPlaceIds = candidateCards
+      .filter((candidate) => selectedIds.includes(candidate.id) && candidate.placeId)
+      .map((candidate) => candidate.placeId)
+      .filter((placeId): placeId is string => Boolean(placeId));
+
+    if (selectedPlaceIds.length === 0) {
+      return;
+    }
+
+    try {
+      await Promise.all(
+        selectedPlaceIds.map((placeId) =>
+          addCollectionPlace(defaultCollectionId, { place_id: placeId }),
+        ),
+      );
+      await queryClient.invalidateQueries({ queryKey: collectionKeys.places(defaultCollectionId) });
+      await queryClient.invalidateQueries({ queryKey: collectionKeys.lists });
+    } catch {
+      // 후보 상태 변경은 이미 완료된 상태다. 장소 추가 실패는 다음 목록 갱신에서 다시 확인한다.
+    }
+  };
+
   const finishToHome = async () => {
     const succeeded = await updateSelectedCandidates('accepted');
     if (!succeeded) {
       return;
     }
+    await addSelectedPlacesToDefaultCollection();
     setSelectedIds([]);
     router.replace('/');
   };
@@ -221,6 +258,7 @@ export default function RecentPlacesScreen() {
       return;
     }
     setSelectedIds([]);
+    router.replace('/');
   };
 
   return (
@@ -235,12 +273,14 @@ export default function RecentPlacesScreen() {
         <Text style={styles.sourceTitle}>{sourceLink?.title ?? '분석 출처 링크'}</Text>
         <Text style={styles.sourceUrl}>{sourceLink?.url ?? '공유 링크 정보 없음'}</Text>
       </View>
-      <View style={styles.selectionHeader}>
-        <Text style={styles.selectionSummary}>선택한 장소 {selectedCount}개</Text>
-        <Pressable disabled={selectableIds.length === 0} onPress={toggleAll}>
-          <Text style={styles.selectAll}>{allSelected ? '전체 해제' : '전체 선택'}</Text>
-        </Pressable>
-      </View>
+      {hasCandidateResult ? (
+        <View style={styles.selectionHeader}>
+          <Text style={styles.selectionSummary}>선택한 장소 {selectedCount}개</Text>
+          <Pressable disabled={selectableIds.length === 0} onPress={toggleAll}>
+            <Text style={styles.selectAll}>{allSelected ? '전체 해제' : '전체 선택'}</Text>
+          </Pressable>
+        </View>
+      ) : null}
       {candidatesQuery.isPending && !candidatesQuery.data && cachedCandidates.length === 0 ? (
         <PlanListSkeleton count={3} />
       ) : !jobId ? (
@@ -252,13 +292,13 @@ export default function RecentPlacesScreen() {
         <EmptyState description="끝나면 알려드릴게요." title="분석 중입니다" />
       ) : resultStatus === 'failed' || analysisFailed ? (
         <EmptyState
-          description="다시 제출하거나 잠시 후 시도해주세요."
-          title="링크 분석에 실패했어요"
+          description="링크 분석에 실패했어요. 다시 제출하거나 잠시 후 시도해주세요."
+          title="장소를 찾지 못했어요"
         />
       ) : resultStatus === 'no_candidates' ? (
         <EmptyState
-          description="다른 링크를 공유하거나 직접 장소를 추가해보세요."
-          title="분석은 완료됐지만 장소를 찾지 못했어요"
+          description="분석은 완료됐지만 추가할 장소 후보가 없습니다."
+          title="장소 후보가 없습니다"
         />
       ) : resultStatus === null ? (
         <EmptyState
@@ -271,19 +311,27 @@ export default function RecentPlacesScreen() {
             key={candidate.id}
             style={[styles.card, selectedIds.includes(candidate.id) && styles.selectedCard]}
             onPress={() => {
-              if (resultStatus === 'places_resolved' && candidate.placeId) {
-                router.push(
-                  `/places/${candidate.placeId}?entry=candidate&candidateId=${candidate.id}`,
-                );
-                return;
-              }
-
               toggleCandidate(candidate.id);
             }}
           >
             <View style={styles.cardPreview}>
               <View style={styles.thumbnail} />
               <View style={styles.cardContent}>
+                <View
+                  style={[
+                    styles.statusBadge,
+                    candidate.placeId ? styles.resolvedBadge : styles.unresolvedBadge,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.statusBadgeText,
+                      candidate.placeId ? styles.resolvedBadgeText : styles.unresolvedBadgeText,
+                    ]}
+                  >
+                    {candidate.placeId ? '장소 확인됨' : '장소 확인 필요'}
+                  </Text>
+                </View>
                 <Text style={styles.cardTitle}>{candidate.name}</Text>
                 <Text style={styles.cardMeta}>
                   {candidate.category} · {candidate.countryLabel}
@@ -305,26 +353,28 @@ export default function RecentPlacesScreen() {
           </Pressable>
         ))
       )}
-      <View style={styles.bottomActions}>
-        <CandidateActionButton
-          disabled={selectedCount === 0 || isMutating}
-          label="수락"
-          onPress={() => {
-            void finishToHome();
-          }}
-          style={styles.primaryButton}
-          textStyle={styles.primaryButtonText}
-        />
-        <CandidateActionButton
-          disabled={selectedCount === 0 || isMutating}
-          label="거절"
-          onPress={() => {
-            void deleteSelected();
-          }}
-          style={styles.deleteButton}
-          textStyle={styles.deleteButtonText}
-        />
-      </View>
+      {hasCandidateResult ? (
+        <View style={styles.bottomActions}>
+          <CandidateActionButton
+            disabled={selectedCount === 0 || isMutating}
+            label="수락"
+            onPress={() => {
+              void finishToHome();
+            }}
+            style={styles.primaryButton}
+            textStyle={styles.primaryButtonText}
+          />
+          <CandidateActionButton
+            disabled={selectedCount === 0 || isMutating}
+            label="거절"
+            onPress={() => {
+              void deleteSelected();
+            }}
+            style={styles.deleteButton}
+            textStyle={styles.deleteButtonText}
+          />
+        </View>
+      ) : null}
     </ScrollView>
   );
 }
@@ -375,6 +425,17 @@ const createStyles = (theme: AppTheme) =>
       width: 84,
     },
     cardContent: { flex: 1, gap: 8, justifyContent: 'center' },
+    statusBadge: {
+      alignSelf: 'flex-start',
+      borderRadius: 999,
+      paddingHorizontal: 9,
+      paddingVertical: 4,
+    },
+    resolvedBadge: { backgroundColor: theme.semantic.primarySoft },
+    unresolvedBadge: { backgroundColor: theme.semantic.warningSoft },
+    statusBadgeText: { fontSize: 12, fontWeight: '800' },
+    resolvedBadgeText: { color: theme.semantic.primaryDeep },
+    unresolvedBadgeText: { color: theme.semantic.warning },
     cardTitle: { color: theme.semantic.text, fontSize: 17, fontWeight: '800' },
     cardMeta: { color: theme.semantic.textMuted },
     check: {
