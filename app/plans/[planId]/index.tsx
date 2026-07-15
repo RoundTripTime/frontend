@@ -274,6 +274,14 @@ function PlanDetailHeader({
                 <Ionicons color={titleIconColor} name="pencil-outline" size={15} />
               </TouchableOpacity>
             )}
+            <TouchableOpacity
+              accessibilityLabel="플랜 지도 보기"
+              activeOpacity={0.75}
+              style={styles.mapButton}
+              onPress={() => router.push(`/plans/${plan.id}/map`)}
+            >
+              <Ionicons color={titleIconColor} name="map-outline" size={22} />
+            </TouchableOpacity>
           </View>
           <Text style={styles.meta}>{plan.meta}</Text>
         </>
@@ -412,6 +420,16 @@ const createStyles = (theme: AppTheme) =>
     headerContent: { gap: 10 },
     listShell: { flex: 1, minHeight: 0 },
     loadingState: { alignItems: 'center', gap: 10, padding: 24 },
+    mapButton: {
+      alignItems: 'center',
+      backgroundColor: theme.semantic.surface,
+      borderColor: theme.semantic.border,
+      borderRadius: 18,
+      borderWidth: 1,
+      height: 36,
+      justifyContent: 'center',
+      width: 36,
+    },
     meta: { color: theme.semantic.textMuted },
     place: { color: theme.semantic.textSecondary },
     placeCopy: { flex: 1, gap: 4 },
@@ -454,7 +472,7 @@ const createStyles = (theme: AppTheme) =>
       opacity: 0.32,
     },
     title: { color: theme.semantic.text, fontSize: 28, fontWeight: '800' },
-    titleButton: { alignItems: 'center', flexDirection: 'row', gap: 6 },
+    titleButton: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: 6 },
     titleInput: {
       color: theme.semantic.text,
       fontSize: 28,
@@ -462,5 +480,10 @@ const createStyles = (theme: AppTheme) =>
       margin: 0,
       padding: 0,
     },
-    titleRow: { alignItems: 'flex-start' },
+    titleRow: {
+      alignItems: 'flex-start',
+      flexDirection: 'row',
+      gap: 12,
+      justifyContent: 'space-between',
+    },
   });

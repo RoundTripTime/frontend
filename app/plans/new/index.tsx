@@ -27,8 +27,6 @@ type SavedPlace = {
   country: string;
 };
 
-const quickDestinations = ['일본', '한국', '태국', '베트남', '기타'];
-
 function toDateInput(date: Date | null) {
   if (!date) {
     return '';
@@ -52,7 +50,6 @@ export default function NewPlanScreen() {
   const pageWidth = width - 40;
   const slideX = useRef(new Animated.Value(0)).current;
   const [title, setTitle] = useState('');
-  const [destination, setDestination] = useState('');
   const [startDateValue, setStartDateValue] = useState<Date | null>(null);
   const [endDateValue, setEndDateValue] = useState<Date | null>(null);
   const [activeDatePicker, setActiveDatePicker] = useState<'end' | 'start' | null>(null);
@@ -77,8 +74,7 @@ export default function NewPlanScreen() {
   );
   const startDate = toDateInput(startDateValue);
   const endDate = toDateInput(endDateValue);
-  const canGoNext =
-    title.trim().length > 0 && destination.trim().length > 0 && !!startDateValue && !!endDateValue;
+  const canGoNext = title.trim().length > 0 && !!startDateValue && !!endDateValue;
   const allSelected = savedPlaces.length > 0 && selectedPlaceIds.length === savedPlaces.length;
   const selectedCount = selectedPlaceIds.length;
   const isSubmitting = createItineraryMutation.isPending;
@@ -118,9 +114,12 @@ export default function NewPlanScreen() {
       return;
     }
 
+    const destinationRegion =
+      savedPlaces.find((place) => selectedPlaceIds.includes(place.id))?.country ?? '미정';
+
     try {
       const itinerary = await createItineraryMutation.mutateAsync({
-        destination_region: destination.trim(),
+        destination_region: destinationRegion,
         end_date: endDate,
         party_size: partySize,
         start_date: startDate,
@@ -151,7 +150,7 @@ export default function NewPlanScreen() {
       <DevScreenHeader screenName="새 플랜 만들기" screenNumber="S-06N" />
       {/*
         화면: 새 플랜 만들기 (S-06N)
-        기능: 플랜 이름, 여행 국가, 날짜, 인원을 입력하고 저장 장소를 선택해 플랜 생성 API를 호출한다.
+        기능: 플랜 이름, 날짜, 인원을 입력하고 저장 장소를 선택해 플랜 생성 API를 호출한다.
         가능한 다음 이동 화면: S-07
       */}
       <Text style={styles.screenTitle}>플랜 만들기</Text>
@@ -174,24 +173,6 @@ export default function NewPlanScreen() {
                 placeholder="도쿄 여름 여행"
                 style={styles.input}
                 value={title}
-              />
-            </View>
-            <View style={styles.field}>
-              <Text style={styles.label}>여행 국가</Text>
-              <View style={styles.chips}>
-                {quickDestinations.map((item) => (
-                  <TouchableOpacity key={item} onPress={() => setDestination(item)}>
-                    <Text style={[styles.chip, destination === item && styles.activeChip]}>
-                      {item}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <TextInput
-                onChangeText={setDestination}
-                placeholder="직접 입력"
-                style={styles.input}
-                value={destination}
               />
             </View>
             <View style={styles.field}>
@@ -338,11 +319,6 @@ export default function NewPlanScreen() {
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    activeChip: {
-      backgroundColor: theme.semantic.primarySoft,
-      color: theme.semantic.primaryDeep,
-      fontWeight: '800',
-    },
     backText: { color: theme.semantic.primary, fontWeight: '800' },
     card: { backgroundColor: theme.semantic.surface, borderRadius: 8, gap: 12, padding: 14 },
     cardMeta: { color: theme.semantic.textMuted },
@@ -359,15 +335,6 @@ const createStyles = (theme: AppTheme) =>
       width: 24,
     },
     checked: { backgroundColor: theme.semantic.primary, borderColor: theme.semantic.primary },
-    chip: {
-      backgroundColor: theme.semantic.surfaceMuted,
-      borderRadius: 18,
-      color: theme.semantic.textSecondary,
-      overflow: 'hidden',
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-    },
-    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     container: { backgroundColor: theme.semantic.background, gap: 14, padding: 20 },
     counter: { alignItems: 'center', flexDirection: 'row', gap: 18 },
     counterButton: { color: theme.semantic.primary, fontSize: 26, fontWeight: '900' },

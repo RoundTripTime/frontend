@@ -27,9 +27,12 @@
     <script>
       const params = new URLSearchParams(window.location.search);
       const appKey = params.get('appKey') || '';
-      const latitude = Number(params.get('lat'));
-      const longitude = Number(params.get('lng'));
-      const placeName = params.get('name') || 'place';
+      const initialMarkers = parseMarkers(params.get('markers'));
+      const initialShowPolyline = params.get('showPolyline') === 'true';
+      let map = null;
+      let markers = [];
+      let markerLabels = [];
+      let polyline = null;
 
       function postMessage(payload) {
         if (window.ReactNativeWebView) {
@@ -41,6 +44,144 @@
         postMessage({ type: 'error', message });
       }
 
+      function escapeHtml(value) {
+        return String(value || '')
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;')
+          .replaceAll('"', '&quot;')
+          .replaceAll("'", '&#039;');
+      }
+
+      function parseMarkers(value) {
+        if (!value) {
+          return [];
+        }
+
+        try {
+          const parsed = JSON.parse(value);
+
+          if (!Array.isArray(parsed)) {
+            return [];
+          }
+
+          return parsed
+            .map(function (marker, index) {
+              return {
+                id: String(marker.id || index),
+                lat: Number(marker.lat),
+                lng: Number(marker.lng),
+                order: marker.order,
+                title: marker.title || '',
+              };
+            })
+            .filter(function (marker) {
+              return Number.isFinite(marker.lat) && Number.isFinite(marker.lng);
+            });
+        } catch {
+          return [];
+        }
+      }
+
+      function clearMapObjects() {
+        markers.forEach(function (marker) {
+          marker.setMap(null);
+        });
+        markers = [];
+        markerLabels.forEach(function (label) {
+          label.setMap(null);
+        });
+        markerLabels = [];
+
+        if (polyline) {
+          polyline.setMap(null);
+          polyline = null;
+        }
+      }
+
+      function renderMarkers(nextMarkers, showPolyline) {
+        if (!map || !window.kakao || !window.kakao.maps) {
+          return;
+        }
+
+        clearMapObjects();
+
+        if (nextMarkers.length === 0) {
+          return;
+        }
+
+        const bounds = new window.kakao.maps.LatLngBounds();
+        const path = nextMarkers.map(function (marker) {
+          const position = new window.kakao.maps.LatLng(marker.lat, marker.lng);
+          const markerTitle = escapeHtml(marker.title);
+          bounds.extend(position);
+
+          markers.push(
+            new window.kakao.maps.Marker({
+              map,
+              position,
+              title: marker.title,
+            }),
+          );
+
+          markerLabels.push(
+            new window.kakao.maps.CustomOverlay({
+              content:
+                '<div style="display:flex;align-items:center;gap:6px;max-width:180px;padding:5px 8px 5px 5px;border-radius:999px;background:#fff;color:#191f28;font-size:12px;font-weight:800;line-height:1;box-shadow:0 3px 10px rgba(0,0,0,0.22);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
+                '<span style="flex:0 0 auto;width:24px;height:24px;border-radius:12px;background:#2563eb;color:#fff;font-size:12px;font-weight:900;line-height:24px;text-align:center;">' +
+                (marker.order || '') +
+                '</span>' +
+                '<span style="overflow:hidden;text-overflow:ellipsis;">' +
+                markerTitle +
+                '</span>' +
+                '</div>',
+              map,
+              position,
+              yAnchor: 2.15,
+            }),
+          );
+
+          return position;
+        });
+
+        if (showPolyline && path.length > 1) {
+          polyline = new window.kakao.maps.Polyline({
+            map,
+            path,
+            strokeColor: '#2563eb',
+            strokeOpacity: 0.85,
+            strokeStyle: 'solid',
+            strokeWeight: 4,
+          });
+        }
+
+        window.setTimeout(function () {
+          map.relayout();
+          if (nextMarkers.length === 1) {
+            map.setLevel(4);
+            map.setCenter(path[0]);
+          } else {
+            map.setBounds(bounds);
+          }
+        }, 100);
+      }
+
+      function handleNativeMessage(event) {
+        try {
+          const data = JSON.parse(event.data);
+
+          if (data.type === 'setMarkers') {
+            renderMarkers(parseMarkers(JSON.stringify(data.markers)), Boolean(data.showPolyline));
+          }
+        } catch {
+          fail('지도 마커 데이터를 처리하지 못했습니다.');
+        }
+      }
+
+      window.roundtripSetMarkers = function (nextMarkers, showPolyline) {
+        renderMarkers(parseMarkers(JSON.stringify(nextMarkers)), Boolean(showPolyline));
+      };
+
       function loadMap() {
         if (!window.kakao || !window.kakao.maps) {
           fail('Kakao Maps SDK가 초기화되지 않았습니다.');
@@ -48,31 +189,24 @@
         }
 
         window.kakao.maps.load(function () {
-          const center = new window.kakao.maps.LatLng(latitude, longitude);
-          const map = new window.kakao.maps.Map(document.getElementById('map'), {
+          const firstMarker = initialMarkers[0] || { lat: 37.5665, lng: 126.978 };
+          const center = new window.kakao.maps.LatLng(firstMarker.lat, firstMarker.lng);
+          map = new window.kakao.maps.Map(document.getElementById('map'), {
             center,
             level: 4,
           });
 
-          new window.kakao.maps.Marker({
-            map,
-            position: center,
-            title: placeName,
-          });
-
-          window.setTimeout(function () {
-            map.relayout();
-          }, 100);
-
+          renderMarkers(initialMarkers, initialShowPolyline);
           postMessage({ type: 'ready' });
         });
       }
 
       if (!appKey) {
         fail('Kakao JavaScript 키가 없습니다.');
-      } else if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-        fail('장소 좌표가 올바르지 않습니다.');
       } else {
+        document.addEventListener('message', handleNativeMessage);
+        window.addEventListener('message', handleNativeMessage);
+
         const sdk = document.createElement('script');
         sdk.src =
           'https://dapi.kakao.com/v2/maps/sdk.js?autoload=false&appkey=' +

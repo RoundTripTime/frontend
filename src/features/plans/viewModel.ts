@@ -56,8 +56,12 @@ function formatDateRange(startDate: string, endDate: string) {
   return `${startDate.replaceAll('-', '.')} ~ ${endDate.replaceAll('-', '.')}`;
 }
 
+function hasAssignedDay(item: ItineraryItem) {
+  return item.day_index !== null;
+}
+
 function hasScheduledTime(item: ItineraryItem) {
-  return item.day_index !== null && item.start_time !== null && item.end_time !== null;
+  return item.start_time !== null && item.end_time !== null;
 }
 
 function sortItems(a: PlanPlaceViewModel, b: PlanPlaceViewModel) {
@@ -65,9 +69,10 @@ function sortItems(a: PlanPlaceViewModel, b: PlanPlaceViewModel) {
 }
 
 function toPlanPlaceViewModel(item: ItineraryItem): PlanPlaceViewModel {
-  const isScheduled = hasScheduledTime(item);
-  const dayIndex = isScheduled ? item.day_index : null;
-  const sortOrder = isScheduled ? item.sort_order : null;
+  const isAssigned = hasAssignedDay(item);
+  const hasTime = hasScheduledTime(item);
+  const dayIndex = isAssigned ? item.day_index : null;
+  const sortOrder = isAssigned ? item.sort_order : null;
 
   return {
     itemId: item.item_id,
@@ -82,7 +87,7 @@ function toPlanPlaceViewModel(item: ItineraryItem): PlanPlaceViewModel {
     startTime: item.start_time,
     endTime: item.end_time,
     plannedDurationMinutes: item.planned_duration_minutes,
-    timeLabel: isScheduled ? `${item.start_time} - ${item.end_time}` : '미배치',
+    timeLabel: hasTime ? `${item.start_time} - ${item.end_time}` : '시간 미정',
     markerTone: dayIndex ? 'day' : 'unassigned',
   };
 }
