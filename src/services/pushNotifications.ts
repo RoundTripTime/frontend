@@ -66,16 +66,10 @@ export async function registerKnownDeviceToken(
 }
 
 export async function unregisterCurrentDeviceToken() {
-  let token = registeredDeviceToken;
+  const token = registeredDeviceToken;
 
   if (!token) {
-    try {
-      const deviceToken = await Notifications.getDevicePushTokenAsync();
-      token = String(deviceToken.data);
-    } catch (error) {
-      console.warn('[FCM] device token unregister skipped', error);
-      return;
-    }
+    return;
   }
 
   try {

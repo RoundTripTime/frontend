@@ -27,8 +27,31 @@ const appMode = APP_ENV_MODES[requestedAppEnv as AppEnvMode] ?? APP_ENV_MODES.de
 
 const googleIosUrlScheme =
   process.env.EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME ?? 'com.googleusercontent.apps.REPLACE_ME';
-const kakaoNativeAppKey =
-  process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY ?? 'KAKAO_NATIVE_APP_KEY_REQUIRED';
+const rawKakaoNativeAppKey = process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY?.trim();
+const rawKakaoJsKey = process.env.EXPO_PUBLIC_KAKAO_JS_KEY?.trim();
+const kakaoNativeAppKey = rawKakaoNativeAppKey ?? 'KAKAO_NATIVE_APP_KEY_REQUIRED';
+const isInvalidKakaoNativeAppKey =
+  !rawKakaoNativeAppKey ||
+  rawKakaoNativeAppKey === '...' ||
+  rawKakaoNativeAppKey.includes('*') ||
+  !/^[0-9a-f]{32}$/i.test(rawKakaoNativeAppKey);
+const isInvalidKakaoJsKey =
+  !rawKakaoJsKey ||
+  rawKakaoJsKey === '...' ||
+  rawKakaoJsKey.includes('*') ||
+  !/^[0-9a-f]{32}$/i.test(rawKakaoJsKey);
+
+if (process.env.EAS_BUILD === 'true' && isInvalidKakaoNativeAppKey) {
+  throw new Error(
+    'EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY must be the 32-character Kakao Native App Key. Do not use masked values such as "...".',
+  );
+}
+
+if (process.env.EAS_BUILD === 'true' && isInvalidKakaoJsKey) {
+  throw new Error(
+    'EXPO_PUBLIC_KAKAO_JS_KEY must be the 32-character Kakao JavaScript Key. Do not use masked values such as "...".',
+  );
+}
 const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://roundtrip.duckdns.org';
 const usesCleartextApiTraffic = apiBaseUrl.startsWith('http://');
 
@@ -77,6 +100,7 @@ const config: ExpoConfig = {
     'expo-router',
     'expo-background-task',
     'expo-secure-store',
+    './plugins/withAndroidShareReceive',
     'expo-video',
     'expo-font',
     '@react-native-community/datetimepicker',

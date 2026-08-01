@@ -9,6 +9,7 @@ import {
   logoutSession,
   type LoginProvider,
 } from '@/src/features/auth/login';
+import { isDevelopmentMode } from '@/src/lib/appMode';
 import {
   clearStoredTokens,
   getAccessToken,
@@ -41,7 +42,8 @@ let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 let beforeSessionClearHandler: (() => Promise<void>) | null = null;
 
 const authTestSecret = process.env.EXPO_PUBLIC_AUTH_TEST_SECRET?.trim();
-const clearStoredTokensOnBoot = process.env.EXPO_PUBLIC_CLEAR_STORED_TOKENS_ON_BOOT === 'true';
+const clearStoredTokensOnBoot =
+  isDevelopmentMode && process.env.EXPO_PUBLIC_CLEAR_STORED_TOKENS_ON_BOOT === 'true';
 
 function clearRefreshTimer() {
   if (refreshTimer) {
@@ -124,7 +126,7 @@ async function refreshAccessTokenSoon() {
 async function bootstrapWithTestToken() {
   // TODO(auth): Test-token bootstrap is for development/release verification only.
   // Remove this fallback when real social login is the only supported production path.
-  if (!authTestSecret) {
+  if (!isDevelopmentMode || !authTestSecret) {
     return null;
   }
 

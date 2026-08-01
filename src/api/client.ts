@@ -2,6 +2,7 @@ import {
   AxiosError,
   AxiosHeaders,
   create,
+  type AxiosRequestConfig,
   type AxiosInstance,
   type AxiosResponse,
   type InternalAxiosRequestConfig,
@@ -20,6 +21,9 @@ export type RefreshTokenProvider = () => string | null | Promise<string | null>;
 export type TokenRefreshHandler = (refreshToken: string) => Promise<string>;
 export type TokenPersistHandler = (accessToken: string) => void | Promise<void>;
 export type AuthFailureHandler = () => void | Promise<void>;
+export type AuthAwareRequestConfig<Data = unknown> = AxiosRequestConfig<Data> & {
+  _skipAuthFailure?: boolean;
+};
 
 export type AuthInterceptorOptions = {
   getAccessToken: TokenProvider;
@@ -34,6 +38,7 @@ export type ResponseInterceptorOptions = {
 
 type RetriableRequestConfig = InternalAxiosRequestConfig & {
   _retry?: boolean;
+  _skipAuthFailure?: boolean;
 };
 
 export const apiClient = create({
@@ -86,6 +91,7 @@ export async function handleUnauthorizedRefresh(
     error.response?.status !== 401 ||
     !originalRequest ||
     originalRequest._retry ||
+    originalRequest._skipAuthFailure ||
     originalRequest.url?.includes('/auth/refresh')
   ) {
     throw mapApiError(error);

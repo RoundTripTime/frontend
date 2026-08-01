@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
-import { VideoView, useVideoPlayer, type VideoSource } from 'expo-video';
-import { useState } from 'react';
+import { VideoView, createVideoPlayer, type VideoSource } from 'expo-video';
+import { useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -125,20 +125,21 @@ function OnboardingVideoBackground({
   styles: ReturnType<typeof createStyles>;
 }) {
   const videoKey = typeof source === 'number' ? String(source) : JSON.stringify(source);
-  const player = useVideoPlayer(source, (nextPlayer) => {
+  const player = useMemo(() => {
+    const nextPlayer = createVideoPlayer(source);
     nextPlayer.loop = true;
     nextPlayer.muted = true;
     nextPlayer.play();
-  });
+    return nextPlayer;
+  }, [source]);
 
   return (
     <VideoView
       key={videoKey}
-      allowsFullscreen={false}
       contentFit="cover"
+      fullscreenOptions={{ enable: false }}
       nativeControls={false}
       player={player}
-      surfaceType="textureView"
       style={styles.backgroundMedia}
     />
   );

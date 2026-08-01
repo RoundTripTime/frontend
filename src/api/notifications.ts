@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import { apiClient, type AuthAwareRequestConfig } from './client';
 
 import type { QueryParams } from './common';
 import type {
@@ -25,5 +25,10 @@ export async function registerDeviceToken(payload: RegisterDeviceTokenRequest) {
 }
 
 export async function unregisterDeviceToken(payload: UnregisterDeviceTokenRequest) {
-  await apiClient.delete('/notifications/device-tokens', { data: payload });
+  const config: AuthAwareRequestConfig<UnregisterDeviceTokenRequest> = {
+    _skipAuthFailure: true,
+    data: payload,
+  };
+
+  await apiClient.delete('/notifications/device-tokens', config);
 }
