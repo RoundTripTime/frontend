@@ -1,8 +1,8 @@
 import * as Sentry from '@sentry/react-native';
-import Constants from 'expo-constants';
+
+import { currentAppEnv } from './appMode';
 
 const dsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
-const appEnv = (Constants.expoConfig?.extra?.appEnv as string | undefined) ?? 'development';
 
 let initialized = false;
 
@@ -12,10 +12,10 @@ export function initSentry(): void {
 
   Sentry.init({
     dsn,
-    environment: appEnv,
-    debug: appEnv !== 'production',
+    environment: currentAppEnv,
+    debug: currentAppEnv !== 'production',
     enableAutoSessionTracking: true,
-    tracesSampleRate: appEnv === 'production' ? 0.1 : 1.0,
+    tracesSampleRate: currentAppEnv === 'production' ? 0.1 : 1.0,
   });
   initialized = true;
 }

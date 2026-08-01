@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "748619252238",
+    "project_id": "roundtrip-52224",
+    "storage_bucket": "roundtrip-52224.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:748619252238:android:aaa8cffe7cba110abe725f",
+        "android_client_info": {
+          "package_name": "com.roundtriptime.roundtrip"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBJ01EXTmhuvsJTnBxptvoKzVTH7O3GCyU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

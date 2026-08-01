@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { logger } from '@/src/lib/logger';
 import { captureException } from '@/src/lib/sentry';
+import { lightTheme } from '@/src/theme';
 
 type Props = {
   children: ReactNode;
@@ -71,10 +72,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
-    backgroundColor: '#007AFF',
+    backgroundColor: lightTheme.semantic.primary,
   },
   buttonText: {
-    color: 'white',
+    color: lightTheme.semantic.onPrimary,
     fontWeight: '600',
   },
 });

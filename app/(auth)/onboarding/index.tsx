@@ -1,0 +1,216 @@
+import { useRouter } from 'expo-router';
+import { VideoView, createVideoPlayer, type VideoSource } from 'expo-video';
+import { useMemo, useState } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { DevScreenHeader } from '@/src/components/DevScreenHeader';
+import { useAuthStore } from '@/src/stores/auth';
+import { useAppTheme, type AppTheme } from '@/src/theme';
+
+type OnboardingBackgroundVideo = {
+  source: VideoSource;
+  type: 'video';
+};
+
+const onboardingBackgroundVideos: readonly [
+  OnboardingBackgroundVideo,
+  ...OnboardingBackgroundVideo[],
+] = [
+  {
+    source: require('../../../assets/videos/onboarding-travel-portrait.mp4') as VideoSource,
+    type: 'video',
+  },
+  {
+    source: require('../../../assets/videos/onboarding-travel-landscape.mp4') as VideoSource,
+    type: 'video',
+  },
+];
+
+function pickRandomOnboardingVideo() {
+  const index = Math.floor(Math.random() * onboardingBackgroundVideos.length);
+  const fallbackVideo = onboardingBackgroundVideos[0];
+
+  return onboardingBackgroundVideos[index] ?? fallbackVideo;
+}
+
+export default function OnboardingScreen() {
+  const theme = useAppTheme();
+  const safeAreaInsets = useSafeAreaInsets();
+  const styles = createStyles(theme, safeAreaInsets.bottom);
+  const router = useRouter();
+  const login = useAuthStore((state) => state.login);
+  const status = useAuthStore((state) => state.status);
+  const errorMessage = useAuthStore((state) => state.errorMessage);
+  const [pendingProvider, setPendingProvider] = useState<'google' | 'kakao' | null>(null);
+  const [backgroundMedia] = useState(pickRandomOnboardingVideo);
+  const isLoading = status === 'checking';
+
+  const handleLogin = async (provider: 'google' | 'kakao') => {
+    setPendingProvider(provider);
+
+    try {
+      await login(provider);
+      router.replace('/');
+    } catch {
+      // The auth store exposes the user-facing error message.
+    } finally {
+      setPendingProvider(null);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <OnboardingBackground media={backgroundMedia} styles={styles} />
+      <View style={styles.scrim} />
+      <DevScreenHeader screenName="온보딩" screenNumber="S-01" />
+      {/*
+        화면: 온보딩 (S-01)
+        기능: 여행 영감 저장, 장소 자동 추출, 일정 생성 및 예약 가치를 소개하고 소셜 로그인을 유도한다.
+        가능한 다음 이동 화면: S-02
+      */}
+      <View style={styles.contentLayer}>
+        <View style={styles.copyGroup}>
+          <Text style={styles.brand}>RoundTrip</Text>
+          <Text style={styles.title}>{'떠나고 싶은\n모든 순간을,\n한 번의 공유로.'}</Text>
+          <Text style={styles.subtitle}>
+            {'인스타, 유튜브 링크를 공유하세요.\nAI가 장소를 자동으로 추가해줘요.'}
+          </Text>
+        </View>
+
+        <View style={styles.actionGroup}>
+          {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
+          <TouchableOpacity
+            disabled={isLoading}
+            style={[styles.primaryButton, isLoading && styles.disabledButton]}
+            onPress={() => {
+              void handleLogin('google');
+            }}
+          >
+            <Text style={styles.primaryButtonText}>
+              {pendingProvider === 'google' ? 'Google 로그인 중...' : 'Google로 시작하기'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            disabled={isLoading}
+            style={[styles.secondaryButton, isLoading && styles.disabledButton]}
+            onPress={() => {
+              void handleLogin('kakao');
+            }}
+          >
+            <Text style={styles.secondaryButtonText}>
+              {pendingProvider === 'kakao' ? 'Kakao 로그인 중...' : 'Kakao로 시작하기'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+type OnboardingBackgroundProps = {
+  media: OnboardingBackgroundVideo;
+  styles: ReturnType<typeof createStyles>;
+};
+
+function OnboardingBackground({ media, styles }: OnboardingBackgroundProps) {
+  return <OnboardingVideoBackground source={media.source} styles={styles} />;
+}
+
+function OnboardingVideoBackground({
+  source,
+  styles,
+}: {
+  source: VideoSource;
+  styles: ReturnType<typeof createStyles>;
+}) {
+  const videoKey = typeof source === 'number' ? String(source) : JSON.stringify(source);
+  const player = useMemo(() => {
+    const nextPlayer = createVideoPlayer(source);
+    nextPlayer.loop = true;
+    nextPlayer.muted = true;
+    nextPlayer.play();
+    return nextPlayer;
+  }, [source]);
+
+  return (
+    <VideoView
+      key={videoKey}
+      contentFit="cover"
+      fullscreenOptions={{ enable: false }}
+      nativeControls={false}
+      player={player}
+      style={styles.backgroundMedia}
+    />
+  );
+}
+
+const createStyles = (theme: AppTheme, safeAreaBottom: number) =>
+  StyleSheet.create({
+    actionGroup: { gap: 12 },
+    backgroundMedia: {
+      ...StyleSheet.absoluteFillObject,
+      height: '100%',
+      width: '100%',
+    },
+    brand: {
+      color: theme.semantic.onPrimary,
+      fontSize: 18,
+      fontWeight: '900',
+      letterSpacing: 0,
+    },
+    container: {
+      backgroundColor: theme.semantic.background,
+      flex: 1,
+    },
+    contentLayer: {
+      flex: 1,
+      justifyContent: 'space-between',
+      paddingBottom: Math.max(
+        theme.spacing.xxl + theme.spacing.sm,
+        safeAreaBottom + theme.spacing.lg,
+      ),
+      paddingHorizontal: 22,
+      paddingTop: 118,
+    },
+    copyGroup: { gap: 14 },
+    error: {
+      backgroundColor: 'rgba(255,255,255,0.88)',
+      borderRadius: 8,
+      color: theme.semantic.danger,
+      fontWeight: '800',
+      padding: 12,
+      textAlign: 'center',
+    },
+    primaryButton: {
+      backgroundColor: theme.semantic.onPrimary,
+      borderRadius: 8,
+      padding: 16,
+    },
+    primaryButtonText: {
+      color: theme.semantic.primaryDeep,
+      fontWeight: '900',
+      textAlign: 'center',
+    },
+    scrim: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(4, 13, 28, 0.36)',
+    },
+    secondaryButton: { backgroundColor: theme.semantic.kakao, borderRadius: 8, padding: 16 },
+    secondaryButtonText: { color: theme.semantic.text, fontWeight: '900', textAlign: 'center' },
+    subtitle: {
+      color: 'rgba(255,255,255,0.88)',
+      fontSize: 17,
+      fontWeight: '700',
+      lineHeight: 25,
+      maxWidth: 330,
+    },
+    title: {
+      color: theme.semantic.onPrimary,
+      fontSize: 42,
+      fontWeight: '900',
+      lineHeight: 49,
+      maxWidth: 330,
+    },
+    disabledButton: { opacity: 0.5 },
+  });
