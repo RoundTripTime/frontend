@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react';
 import {
   StyleSheet,
   Image,
@@ -10,9 +11,14 @@ import {
 
 import { useAppTheme, type AppTheme } from '@/src/theme';
 
+const IMAGE_REQUEST_HEADERS = {
+  'User-Agent': 'RoundTripApp/0.0.1 (https://roundtrip.duckdns.org)',
+};
+
 export type PlaceCardProps = {
   category: string;
   countryLabel: string;
+  fallbackThumbnailUrl?: string | null;
   name: string;
   onLongPress?: () => void;
   onPress?: () => void;
@@ -23,6 +29,7 @@ export type PlaceCardProps = {
 export function PlaceCard({
   category,
   countryLabel,
+  fallbackThumbnailUrl,
   name,
   onLongPress,
   onPress,
@@ -31,6 +38,16 @@ export function PlaceCard({
 }: PlaceCardProps) {
   const theme = useAppTheme();
   const styles = createStyles(theme);
+  const imageUrls = useMemo(
+    () => [thumbnailUrl, fallbackThumbnailUrl].filter((url): url is string => Boolean(url)),
+    [fallbackThumbnailUrl, thumbnailUrl],
+  );
+  const [imageIndex, setImageIndex] = useState(0);
+  const currentImageUrl = imageUrls[imageIndex];
+
+  useEffect(() => {
+    setImageIndex(0);
+  }, [fallbackThumbnailUrl, thumbnailUrl]);
 
   return (
     <TouchableOpacity
@@ -39,8 +56,19 @@ export function PlaceCard({
       onLongPress={onLongPress}
       onPress={onPress}
     >
-      {thumbnailUrl ? (
-        <Image source={{ uri: thumbnailUrl }} style={styles.thumbnail} />
+      {currentImageUrl ? (
+        <Image
+          source={{ headers: IMAGE_REQUEST_HEADERS, uri: currentImageUrl }}
+          style={styles.thumbnail}
+          resizeMode="cover"
+          onError={(event) => {
+            console.warn('[PlaceCard] thumbnail image failed to load', {
+              error: event.nativeEvent.error,
+              url: currentImageUrl,
+            });
+            setImageIndex((current) => current + 1);
+          }}
+        />
       ) : (
         <View style={styles.thumbnail} />
       )}
@@ -116,6 +144,11 @@ const createStyles = (theme: AppTheme) =>
       paddingVertical: 4,
     },
     meta: { color: theme.semantic.textMuted, fontSize: 13 },
-    thumbnail: { backgroundColor: theme.semantic.mediaPlaceholder, borderRadius: 6, height: 96 },
+    thumbnail: {
+      backgroundColor: theme.semantic.mediaPlaceholder,
+      borderRadius: 6,
+      height: 96,
+      width: '100%',
+    },
     title: { color: theme.semantic.text, fontSize: 16, fontWeight: '800', minHeight: 20 },
   });

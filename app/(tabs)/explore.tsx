@@ -21,29 +21,26 @@ import { CardGridSkeleton } from '@/src/components/LoadingSkeleton';
 import { AppChip } from '@/src/components/ui';
 import { useRefreshLatestExtractionResult } from '@/src/features/extraction/useRefreshLatestExtractionResult';
 import { PlaceCard } from '@/src/features/places/components/PlaceCard';
-import { getPlaceCountryLabel } from '@/src/features/places/viewModel';
+import {
+  getPlaceCategoryLabel,
+  getPlaceCategoryValue,
+  getPlaceCountryLabel,
+  placeCategoryFilterOptions,
+  type PlaceCategoryFilterValue,
+} from '@/src/features/places/viewModel';
 import { useMinimumLoading } from '@/src/hooks/useMinimumLoading';
 import { queryClient } from '@/src/lib/queryClient';
 import { useAppTheme, type AppTheme } from '@/src/theme';
 
-const categoryFilters = ['관광명소', '맛집', '카페', '숙박'];
-const countryFilters = [
-  { code: 'KR', label: '한국' },
-  { code: 'JP', label: '일본' },
-  { code: 'SEA', label: '동남아' },
-];
-
 export default function ExploreScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<PlaceCategoryFilterValue>('all');
   const discoverParams = useMemo(
     () => ({
-      category: selectedCategory,
-      country_code: selectedCountry,
+      category: selectedCategory === 'all' ? undefined : selectedCategory,
     }),
-    [selectedCategory, selectedCountry],
+    [selectedCategory],
   );
   const discoverQuery = useDiscoverPlacesQuery(discoverParams);
   const collectionsQuery = useCollectionsQuery();
@@ -55,11 +52,14 @@ export default function ExploreScreen() {
   const refreshLatestExtractionResult = useRefreshLatestExtractionResult();
   const isInitialLoading = useMinimumLoading(discoverQuery.isPending && !discoverQuery.data);
   const recommendations = discoverQuery.data?.results ?? [];
-
-  const resetFilters = () => {
-    setSelectedCategory(null);
-    setSelectedCountry(null);
-  };
+  const filteredRecommendations = useMemo(
+    () =>
+      recommendations.filter(
+        (place) =>
+          selectedCategory === 'all' || getPlaceCategoryValue(place.category) === selectedCategory,
+      ),
+    [recommendations, selectedCategory],
+  );
 
   const savePlace = async (placeId: string) => {
     if (!defaultCollectionId) {
@@ -90,58 +90,38 @@ export default function ExploreScreen() {
         />
         {/*
           화면: 둘러보기 (S-10)
-          기능: 카테고리와 국가 필터로 취향 기반 추천 장소를 탐색하고 저장한다.
+          기능: 카테고리 필터로 취향 기반 추천 장소를 탐색하고 저장한다.
           가능한 다음 이동 화면: S-05
         */}
         <ScreenControls contentContainerStyle={styles.chips} style={styles.controls}>
-          <AppChip
-            selected={!selectedCategory && !selectedCountry}
-            style={styles.compactChip}
-            textStyle={styles.compactChipText}
-            onPress={resetFilters}
-          >
-            전체
-          </AppChip>
-          {categoryFilters.map((label) => (
+          {placeCategoryFilterOptions.map((option) => (
             <AppChip
-              key={label}
-              selected={selectedCategory === label}
+              key={option.value}
+              selected={selectedCategory === option.value}
               style={styles.compactChip}
               textStyle={styles.compactChipText}
-              onPress={() => setSelectedCategory(selectedCategory === label ? null : label)}
+              onPress={() => setSelectedCategory(option.value)}
             >
-              {label}
-            </AppChip>
-          ))}
-          {countryFilters.map((country) => (
-            <AppChip
-              key={country.code}
-              selected={selectedCountry === country.code}
-              style={styles.compactChip}
-              textStyle={styles.compactChipText}
-              onPress={() =>
-                setSelectedCountry(selectedCountry === country.code ? null : country.code)
-              }
-            >
-              {country.label}
+              {option.label}
             </AppChip>
           ))}
         </ScreenControls>
         <ScreenBody style={styles.body}>
           {isInitialLoading ? (
             <CardGridSkeleton />
-          ) : recommendations.length === 0 ? (
+          ) : filteredRecommendations.length === 0 ? (
             <EmptyState
               description="새로운 추천 장소가 준비되면 이곳에 표시됩니다."
               title="지금 인기있는 장소"
             />
           ) : (
             <View style={styles.grid}>
-              {recommendations.map((place) => (
+              {filteredRecommendations.map((place) => (
                 <View key={place.place_id} style={styles.placeItem}>
                   <PlaceCard
-                    category={place.category}
+                    category={getPlaceCategoryLabel(place.category)}
                     countryLabel={getPlaceCountryLabel(place.country_code)}
+                    fallbackThumbnailUrl={place.source_link?.thumbnail_url}
                     name={place.canonical_name}
                     style={styles.placeCard}
                     thumbnailUrl={place.thumbnail_url}

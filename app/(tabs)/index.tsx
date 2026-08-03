@@ -1,3 +1,4 @@
+import { useQueries } from '@tanstack/react-query';
 import { Link, router, type Href } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Alert, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -12,6 +13,8 @@ import {
   useCollectionPlacesQuery,
   useCollectionsQuery,
 } from '@/src/api/collections/hooks';
+import { getPlace } from '@/src/api/places';
+import { placeKeys } from '@/src/api/places/hooks';
 import { DevScreenHeader } from '@/src/components/DevScreenHeader';
 import {
   ScreenBody,
@@ -25,7 +28,11 @@ import { CardGridSkeleton } from '@/src/components/LoadingSkeleton';
 import { AppChip } from '@/src/components/ui';
 import { useRefreshLatestExtractionResult } from '@/src/features/extraction/useRefreshLatestExtractionResult';
 import { PlaceCard } from '@/src/features/places/components/PlaceCard';
-import { createPlaceCardViewModel, type PlaceRegionFilter } from '@/src/features/places/viewModel';
+import {
+  createPlaceCardViewModel,
+  placeCategoryFilterOptions,
+  type PlaceCategoryFilterValue,
+} from '@/src/features/places/viewModel';
 import { useMinimumLoading } from '@/src/hooks/useMinimumLoading';
 import { queryClient } from '@/src/lib/queryClient';
 import {
@@ -34,12 +41,12 @@ import {
 } from '@/src/stores/placeCandidates';
 import { useAppTheme, type AppTheme } from '@/src/theme';
 
-const placeTabs = ['전체', '일본', '한국', '동남아'] as const satisfies PlaceRegionFilter[];
+import type { PlaceDetail, PlaceSummary } from '@/src/api/places/types';
 
 export default function HomeScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
-  const [selectedTab, setSelectedTab] = useState<(typeof placeTabs)[number]>('전체');
+  const [selectedCategory, setSelectedCategory] = useState<PlaceCategoryFilterValue>('all');
   const refreshLatestExtractionResult = useRefreshLatestExtractionResult();
   const pendingCandidateCount = usePlaceCandidateStore(selectPendingPlaceCandidateCount);
   const collectionsQuery = useCollectionsQuery();
@@ -53,18 +60,43 @@ export default function HomeScreen() {
       (collection) => collection.collection_id !== defaultCollectionId,
     ) ?? [];
   const collectionPlacesQuery = useCollectionPlacesQuery(defaultCollectionId);
+  const collectionPlaces = useMemo(
+    () => collectionPlacesQuery.data?.places ?? [],
+    [collectionPlacesQuery.data?.places],
+  );
+  const placeDetailQueries = useQueries({
+    queries: collectionPlaces.map((place) => ({
+      enabled: !!place.place_id,
+      queryFn: () => getPlace(place.place_id),
+      queryKey: placeKeys.detail(place.place_id),
+    })),
+  });
+  const placeDetailsById = useMemo(() => {
+    const entries = placeDetailQueries
+      .map((query) => query.data)
+      .filter((place): place is PlaceDetail => !!place)
+      .map((place) => [place.place_id, place] as const);
+
+    return new Map(entries);
+  }, [placeDetailQueries]);
   const isInitialQueryLoading =
     (collectionsQuery.isPending && !collectionsQuery.data) ||
     (collectionPlacesQuery.isPending && !collectionPlacesQuery.data);
   const isInitialLoading = useMinimumLoading(isInitialQueryLoading);
-  const placeCards = useMemo(
-    () => (collectionPlacesQuery.data?.places ?? []).map(createPlaceCardViewModel),
-    [collectionPlacesQuery.data?.places],
-  );
+  const placeCards = useMemo(() => {
+    return collectionPlaces.map((place) => {
+      const detailedPlace = placeDetailsById.get(place.place_id);
+
+      return createPlaceCardViewModel((detailedPlace ?? place) as PlaceSummary);
+    });
+  }, [collectionPlaces, placeDetailsById]);
 
   const filteredPlaces = useMemo(
-    () => placeCards.filter((place) => selectedTab === '전체' || place.region === selectedTab),
-    [placeCards, selectedTab],
+    () =>
+      placeCards.filter(
+        (place) => selectedCategory === 'all' || place.categoryValue === selectedCategory,
+      ),
+    [placeCards, selectedCategory],
   );
 
   const invalidateCollectionPlaces = async (...collectionIds: string[]) => {
@@ -163,6 +195,7 @@ export default function HomeScreen() {
           Promise.all([
             collectionsQuery.refetch(),
             collectionPlacesQuery.refetch(),
+            ...placeDetailQueries.map((query) => query.refetch()),
             refreshLatestExtractionResult(),
           ])
         }
@@ -194,13 +227,13 @@ export default function HomeScreen() {
         */}
 
         <ScreenControls contentContainerStyle={styles.chips}>
-          {placeTabs.map((label) => (
+          {placeCategoryFilterOptions.map((option) => (
             <AppChip
-              key={label}
-              selected={selectedTab === label}
-              onPress={() => setSelectedTab(label)}
+              key={option.value}
+              selected={selectedCategory === option.value}
+              onPress={() => setSelectedCategory(option.value)}
             >
-              {label}
+              {option.label}
             </AppChip>
           ))}
         </ScreenControls>
@@ -215,9 +248,11 @@ export default function HomeScreen() {
                   key={place.id}
                   category={place.category}
                   countryLabel={place.countryLabel}
+                  fallbackThumbnailUrl={place.sourceThumbnailUrl}
                   name={place.name}
                   onLongPress={() => showPlaceActions(place)}
                   onPress={() => router.push(`/places/${place.id}?entry=my-place`)}
+                  thumbnailUrl={place.thumbnailUrl}
                 />
               ))}
             </View>
