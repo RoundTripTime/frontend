@@ -6,6 +6,7 @@ import {
   Text,
   View,
   Alert,
+  Image,
   Pressable,
   type StyleProp,
   type TextStyle,
@@ -75,6 +76,39 @@ function CandidateActionButton({
   );
 }
 
+function CandidateThumbnail({
+  fallbackThumbnailUrl,
+  thumbnailUrl,
+}: {
+  fallbackThumbnailUrl?: string;
+  thumbnailUrl?: string;
+}) {
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
+  const imageUrls = useMemo(
+    () => [thumbnailUrl, fallbackThumbnailUrl].filter((url): url is string => Boolean(url)),
+    [fallbackThumbnailUrl, thumbnailUrl],
+  );
+  const [imageIndex, setImageIndex] = useState(0);
+  const currentImageUrl = imageUrls[imageIndex];
+
+  useEffect(() => {
+    setImageIndex(0);
+  }, [fallbackThumbnailUrl, thumbnailUrl]);
+
+  if (!currentImageUrl) {
+    return <View style={styles.thumbnail} />;
+  }
+
+  return (
+    <Image
+      source={{ uri: currentImageUrl }}
+      style={styles.thumbnail}
+      onError={() => setImageIndex((current) => current + 1)}
+    />
+  );
+}
+
 function getRecentPlaceResultStatus(
   sourceStatus: string | undefined,
   candidates: RecentCandidateCardViewModel[],
@@ -131,9 +165,15 @@ export default function RecentPlacesScreen() {
     () =>
       candidates.map((candidate) => {
         const candidateId = getPlaceCandidateId(candidate);
+        const sourceThumbnailUrl = sourceLink?.thumbnail_url ?? undefined;
 
         if (hasResolvedCandidatePlace(candidate)) {
-          return createPlaceCandidateCardViewModel(candidate);
+          const candidateViewModel = createPlaceCandidateCardViewModel(candidate);
+
+          return {
+            ...candidateViewModel,
+            sourceThumbnailUrl: candidateViewModel.sourceThumbnailUrl ?? sourceThumbnailUrl,
+          };
         }
 
         return {
@@ -148,9 +188,10 @@ export default function RecentPlacesScreen() {
           latitude: null,
           longitude: null,
           thumbnailUrl: undefined,
+          sourceThumbnailUrl,
         };
       }),
-    [candidates],
+    [candidates, sourceLink?.thumbnail_url],
   );
   const resultStatus = getRecentPlaceResultStatus(sourceStatus, candidateCards);
   const selectableIds = useMemo(
@@ -315,7 +356,10 @@ export default function RecentPlacesScreen() {
             }}
           >
             <View style={styles.cardPreview}>
-              <View style={styles.thumbnail} />
+              <CandidateThumbnail
+                fallbackThumbnailUrl={candidate.sourceThumbnailUrl}
+                thumbnailUrl={candidate.thumbnailUrl}
+              />
               <View style={styles.cardContent}>
                 <View
                   style={[

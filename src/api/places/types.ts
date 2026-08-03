@@ -11,8 +11,14 @@ export type PlaceSummary = {
   latitude: number;
   longitude: number;
   country_code: string;
-  thumbnail_url?: string;
+  thumbnail_url?: string | null;
   thumbnail_source?: ThumbnailSource;
+  source_link?: {
+    url?: string;
+    title?: string | null;
+    thumbnail_url?: string | null;
+    platform?: string;
+  };
 };
 
 export type PlaceDetail = PlaceSummary & {
